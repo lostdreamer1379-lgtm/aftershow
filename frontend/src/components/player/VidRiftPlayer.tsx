@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Maximize, RotateCcw } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 import {
   VIDRIFT_ORIGIN,
   buildVidRiftEmbedUrl,
@@ -55,7 +55,6 @@ export default function VidRiftPlayer({
   onNextUpPlay,
   partyCommand,
 }: VidRiftPlayerProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const hasReceivedMessage = useRef(false)
   const hasSentResume = useRef(false)
@@ -145,16 +144,12 @@ export default function VidRiftPlayer({
     return () => window.removeEventListener('message', handleMessage)
   }, [handleMessage])
 
-  const handleFullscreen = () => {
-    containerRef.current?.requestFullscreen?.()
-  }
-
   const handleRetry = () => {
     setRetryKey(k => k + 1)
   }
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div className="relative w-full">
       <div className="player-wrapper rounded-lg overflow-hidden bg-black">
         <iframe
           key={retryKey}
@@ -168,14 +163,6 @@ export default function VidRiftPlayer({
           // embed requires full iframe capabilities to function.
         />
       </div>
-
-      <button
-        onClick={handleFullscreen}
-        className="absolute bottom-3 right-3 w-9 h-9 rounded-md bg-black/60 text-white/90 hover:text-white hover:bg-black/80 flex items-center justify-center transition-colors z-10"
-        aria-label="Fullscreen"
-      >
-        <Maximize size={16} />
-      </button>
 
       {slowToLoad && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 text-center px-6">
