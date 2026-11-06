@@ -1,0 +1,108 @@
+// AFTERSHOW — Prisma schema
+// Database: Supabase PostgreSQL (independent project — not shared with
+// Anteiku or FRAME).
+
+generator client {
+  provider      = "prisma-client-js"
+  // "native" covers local development; "rhel-openssl-3.0.x" is the commonly
+  // needed target for Vercel's Node serverless runtime. Prisma's supported
+  // binary targets do shift between versions, so if a deployed function
+  // fails specifically on loading the Prisma engine (not on your own code),
+  // check Prisma's current docs for the binary target matching Vercel's
+  // runtime at the time you deploy, and adjust this list.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum WatchStatus {
+  plan_to_watch
+  watching
+  completed
+  on_hold
+  dropped
+}
+
+model Profile {
+  id                String   @id @default(uuid())
+  authUserId        String   @unique
+  displayName       String?
+  avatarUrl         String?
+  preferredTheme    String   @default("midnight-blue")
+  preferredLanguage String?
+  preferredRegion   String?
+  autoplayNext      Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+model WatchlistEntry {
+  id         String      @id @default(uuid())
+  userId     String
+  tmdbTvId   Int
+  status     WatchStatus @default(plan_to_watch)
+  addedAt    DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  // A user may have only one watchlist entry per series.
+  @@unique([userId, tmdbTvId])
+  @@index([userId])
+  @@map("watchlist_entries")
+}
+
+model WatchHistory {
+  id              String   @id @default(uuid())
+  userId          String
+  tmdbTvId        Int
+  seasonNumber    Int
+  episodeNumber   Int
+  currentPosition Int      @default(0)
+  duration        Int?
+  completed       Boolean  @default(false)
+  lastWatchedAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // One progress record per user, per episode — identifiable without
+  // creating duplicates, and independent from the series-level watchlist
+  // status above.
+  @@unique([userId, tmdbTvId, seasonNumber, episodeNumber])
+  @@index([userId])
+  @@index([userId, lastWatchedAt])
+  @@map("watch_history")
+}
+
+model TVCollection {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  shows CollectionShow[]
+
+  @@index([userId])
+  @@map("tv_collections")
+}
+
+model CollectionShow {
+  id           String       @id @default(uuid())
+  collectionId String
+  tmdbTvId     Int
+  position     Int          @default(0)
+  addedAt      DateTime     @default(now())
+
+  collection TVCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  // Prevent duplicate show entries within the same collection.
+  @@unique([collectionId, tmdbTvId])
+  @@index([collectionId])
+  @@map("collection_shows")
+}

@@ -1,0 +1,295 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { ChevronLeft, ChevronRight, ArrowLeft, Play, Check } from 'lucide-react'
+import VidRiftPlayer from '@/components/player/VidRiftPlayer'
+import Select from '@/components/ui/Select'
+import ErrorState from '@/components/ui/ErrorState'
+import { useShowDetails, useSeasonDetails } from '@/hooks/useTV'
+import { useHistory, useUpsertProgress } from '@/hooks/useHistory'
+import { useProfile } from '@/hooks/useProfile'
+import { useAuth } from '@/contexts/AuthContext'
+import { getAdjacentEpisodes } from '@/lib/episodeNav'
+import { getStillUrl } from '@/lib/tmdb-image'
+import { NextEpisodeInfo } from '@/types'
+
+export default function WatchPage() {
+  const { id, season, episode } = useParams<{ id: string; season: string; episode: string }>()
+  const navigate = useNavigate()
+  const { user } = useAuth()
+
+  const showId = id ? parseInt(id, 10) : undefined
+  const seasonNumber = season !== undefined ? parseInt(season, 10) : undefined
+  const episodeNumber = episode !== undefined ? parseInt(episode, 10) : undefined
+
+  const { data: show, isLoading: showLoading, isError: showError, refetch: refetchShow } = useShowDetails(showId)
+  const { data: seasonData, isLoading: seasonLoading } = useSeasonDetails(showId, seasonNumber)
+  const { data: profile } = useProfile()
+  const { data: historyEntries } = useHistory()
+  const upsertProgress = useUpsertProgress()
+
+  // Default to autoplay-on for guests (matches the backend's own default);
+  // signed-in users get their saved preference once the profile loads.
+  const autoplayNext = profile?.autoplayNext ?? true
+
+  const { nextTarget, prevTarget, isSeriesFinale } = getAdjacentEpisodes(
+    show,
+    seasonData?.episodes,
+    seasonNumber,
+    episodeNumber
+  )
+
+  // If the next episode crosses into a season we don't already have loaded,
+  // fetch just that season so we can show its real title/still — never a
+  // guessed one.
+  const crossesSeasonBoundary = Boolean(nextTarget && nextTarget.season !== seasonNumber)
+  const { data: nextSeasonData } = useSeasonDetails(showId, crossesSeasonBoundary ? nextTarget!.season : undefined)
+
+  const nextEpisodeInfo: NextEpisodeInfo | null = useMemo(() => {
+    if (!nextTarget) return null
+    const source = crossesSeasonBoundary ? nextSeasonData?.episodes : seasonData?.episodes
+    const match = source?.find(e => e.episode_number === nextTarget.episode)
+    return {
+      season: nextTarget.season,
+      episode: nextTarget.episode,
+      name: match?.name ?? `Episode ${nextTarget.episode}`,
+      still: match?.still_path ? getStillUrl(match.still_path, 'w300') : null,
+    }
+  }, [nextTarget, crossesSeasonBoundary, nextSeasonData, seasonData])
+
+  const currentEpisode = seasonData?.episodes?.find(e => e.episode_number === episodeNumber)
+
+  const existingEntry = historyEntries?.find(
+    h => h.tmdbTvId === showId && h.seasonNumber === seasonNumber && h.episodeNumber === episodeNumber
+  )
+  const resumePosition = existingEntry && !existingEntry.completed ? existingEntry.currentPosition : undefined
+
+  // ── Progress persistence ──────────────────────
+  // vidrift:progress fires frequently; we throttle actual writes to the
+  // backend and always flush on pause and on leaving the episode, so
+  // progress is never lost to the throttle window.
+  const latestProgressRef = useRef<{ currentTime: number; duration?: number } | null>(null)
+  const lastSavedAtRef = useRef(0)
+  const [manualNextPrompt, setManualNextPrompt] = useState(false)
+
+  const saveProgress = useCallback(
+    (data: { currentTime: number; duration?: number }, completedOverride?: boolean) => {
+      if (!user || !showId || seasonNumber === undefined || episodeNumber === undefined) return
+      const completed = completedOverride ?? (data.duration ? data.currentTime / data.duration >= 0.9 : false)
+      upsertProgress.mutate({
+        tmdbTvId: showId,
+        seasonNumber,
+        episodeNumber,
+        currentPosition: Math.floor(data.currentTime),
+        duration: data.duration ? Math.floor(data.duration) : undefined,
+        completed,
+      })
+    },
+    [user, showId, seasonNumber, episodeNumber, upsertProgress]
+  )
+
+  const handleProgress = useCallback(
+    (data: { currentTime: number; duration?: number }) => {
+      latestProgressRef.current = data
+      const now = Date.now()
+      if (now - lastSavedAtRef.current > 15000) {
+        lastSavedAtRef.current = now
+        saveProgress(data)
+      }
+    },
+    [saveProgress]
+  )
+
+  const handlePaused = useCallback(() => {
+    if (latestProgressRef.current) saveProgress(latestProgressRef.current)
+  }, [saveProgress])
+
+  // Flush whatever progress we have whenever the episode changes or the
+  // page unmounts, so a quick switch or navigating away never loses it.
+  useEffect(() => {
+    return () => {
+      if (latestProgressRef.current) saveProgress(latestProgressRef.current)
+    }
+  }, [showId, seasonNumber, episodeNumber, saveProgress])
+
+  useEffect(() => {
+    // Reset per-episode local state when the URL's episode changes.
+    latestProgressRef.current = null
+    lastSavedAtRef.current = 0
+    setManualNextPrompt(false)
+  }, [showId, seasonNumber, episodeNumber])
+
+  const handleEpisodeChangeFromPlayer = useCallback(
+    (s: number, e: number) => {
+      if (s !== seasonNumber || e !== episodeNumber) {
+        navigate(`/watch/tv/${showId}/${s}/${e}`, { replace: true })
+      }
+    },
+    [seasonNumber, episodeNumber, showId, navigate]
+  )
+
+  const handleNextUpPlay = useCallback(() => {
+    // The player has determined this episode is finished — record it as
+    // completed regardless of the autoplay preference, since the user did
+    // in fact finish watching it.
+    if (latestProgressRef.current) saveProgress(latestProgressRef.current, true)
+    else saveProgress({ currentTime: 0 }, true)
+
+    if (!nextTarget) return
+    if (autoplayNext) {
+      navigate(`/watch/tv/${showId}/${nextTarget.season}/${nextTarget.episode}`)
+    } else {
+      setManualNextPrompt(true)
+    }
+  }, [nextTarget, autoplayNext, showId, navigate, saveProgress])
+
+  if (showLoading || seasonLoading) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 space-y-4">
+        <div className="skeleton aspect-video w-full rounded-lg" />
+        <div className="skeleton h-6 w-1/2" />
+      </div>
+    )
+  }
+
+  if (showError || !show || !showId || seasonNumber === undefined || episodeNumber === undefined) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-16">
+        <ErrorState title="Can't play this episode" message="We couldn't load the series or episode data needed for playback." retry={() => refetchShow()} />
+      </div>
+    )
+  }
+
+  const seasonOptions = (show.seasons ?? [])
+    .filter(s => s.season_number >= 0)
+    .map(s => ({ value: String(s.season_number), label: s.name }))
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+      <Link
+        to={`/tv/${show.id}`}
+        className="inline-flex items-center gap-1 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors mb-4"
+      >
+        <ArrowLeft size={16} /> {show.name}
+      </Link>
+
+      <div className="grid lg:grid-cols-[1fr_320px] gap-6">
+        {/* Main column */}
+        <div>
+          <VidRiftPlayer
+            key={`${showId}-${seasonNumber}-${episodeNumber}`}
+            tmdbId={showId}
+            season={seasonNumber}
+            episode={episodeNumber}
+            resumePosition={resumePosition}
+            nextEpisode={nextEpisodeInfo}
+            onProgress={handleProgress}
+            onPaused={handlePaused}
+            onEpisodeChange={handleEpisodeChangeFromPlayer}
+            onNextUpPlay={handleNextUpPlay}
+          />
+
+          {manualNextPrompt && nextEpisodeInfo && (
+            <div className="mt-4 flex items-center gap-4 p-4 rounded-lg border border-[var(--color-accent)] bg-[var(--color-accent-subtle)]">
+              {nextEpisodeInfo.still && (
+                <img src={nextEpisodeInfo.still} alt={nextEpisodeInfo.name} className="w-24 aspect-video object-cover rounded flex-shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-[var(--color-text-muted)] mb-0.5">Up next</p>
+                <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
+                  S{nextEpisodeInfo.season}E{nextEpisodeInfo.episode} · {nextEpisodeInfo.name}
+                </p>
+              </div>
+              <button
+                onClick={() => navigate(`/watch/tv/${showId}/${nextEpisodeInfo.season}/${nextEpisodeInfo.episode}`)}
+                className="flex-shrink-0 inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md bg-[var(--color-accent)] text-[var(--color-bg-primary)] hover:bg-[var(--color-accent-hover)] transition-colors"
+              >
+                <Play size={14} fill="currentColor" /> Play
+              </button>
+            </div>
+          )}
+
+          <div className="mt-5">
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="text-[var(--color-accent)] font-semibold text-sm">S{seasonNumber}E{episodeNumber}</span>
+              <h1 className="font-display text-lg sm:text-xl font-bold text-[var(--color-text-primary)]">
+                {currentEpisode?.name ?? show.name}
+              </h1>
+            </div>
+            {currentEpisode?.overview && (
+              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-4">{currentEpisode.overview}</p>
+            )}
+            {!user && (
+              <p className="text-xs text-[var(--color-text-muted)] mb-4">
+                Sign in to save your progress and pick up where you left off.
+              </p>
+            )}
+
+            {/* Prev / next */}
+            <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-4">
+              {prevTarget ? (
+                <button
+                  onClick={() => navigate(`/watch/tv/${showId}/${prevTarget.season}/${prevTarget.episode}`)}
+                  className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                >
+                  <ChevronLeft size={16} /> Previous
+                </button>
+              ) : <span />}
+
+              {nextTarget ? (
+                <button
+                  onClick={() => navigate(`/watch/tv/${showId}/${nextTarget.season}/${nextTarget.episode}`)}
+                  className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                >
+                  Next Episode <ChevronRight size={16} />
+                </button>
+              ) : isSeriesFinale ? (
+                <span className="text-sm text-[var(--color-text-muted)]">End of series</span>
+              ) : <span />}
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar: season selector + episode list */}
+        <div>
+          {seasonOptions.length > 1 && (
+            <div className="mb-4">
+              <Select
+                value={String(seasonNumber)}
+                onChange={e => navigate(`/watch/tv/${showId}/${e.target.value}/1`)}
+                options={seasonOptions}
+              />
+            </div>
+          )}
+          <div className="space-y-1.5 max-h-[600px] overflow-y-auto pr-1">
+            {(seasonData?.episodes ?? []).map(ep => {
+              const isCurrent = ep.episode_number === episodeNumber
+              const watched = historyEntries?.some(
+                h => h.tmdbTvId === showId && h.seasonNumber === seasonNumber && h.episodeNumber === ep.episode_number && h.completed
+              )
+              return (
+                <button
+                  key={ep.id}
+                  onClick={() => navigate(`/watch/tv/${showId}/${seasonNumber}/${ep.episode_number}`)}
+                  className={`w-full flex gap-3 p-2 rounded-md text-left transition-colors ${
+                    isCurrent ? 'bg-[var(--color-accent-subtle)] border border-[var(--color-accent)]' : 'hover:bg-[var(--color-bg-card)] border border-transparent'
+                  }`}
+                >
+                  <div className="relative flex-shrink-0 w-20 aspect-video rounded overflow-hidden bg-[var(--color-bg-card)]">
+                    <img src={getStillUrl(ep.still_path, 'w185')} alt={ep.name} className="w-full h-full object-cover" loading="lazy" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-xs font-medium truncate ${isCurrent ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}`}>
+                      {ep.episode_number}. {ep.name}
+                    </p>
+                    <p className="text-[11px] text-[var(--color-text-muted)] line-clamp-1">{ep.overview || 'No overview'}</p>
+                  </div>
+                  {watched && <Check size={14} className="text-[var(--color-success)] flex-shrink-0 mt-0.5" />}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

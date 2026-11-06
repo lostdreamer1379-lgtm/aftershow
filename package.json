@@ -1,0 +1,25 @@
+{
+  "name": "aftershow",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AFTERSHOW — premium TV-series discovery and streaming platform.",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "install:all": "npm install --prefix frontend && npm install --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build:backend": "npm run build --prefix backend",
+    "type-check:frontend": "npm run type-check --prefix frontend",
+    "type-check:backend": "npm run type-check --prefix backend",
+    "prisma:generate": "prisma generate --schema=prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema=prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "prisma": "^5.19.1"
+  }
+}
