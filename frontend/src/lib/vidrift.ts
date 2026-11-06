@@ -13,7 +13,10 @@ export const VIDRIFT_ORIGIN = 'https://embed.vidrift.net'
  * episode number — never a guessed id, a database row id, or an array index.
  */
 export function buildVidRiftEmbedUrl(tmdbId: number, season: number, episode: number): string {
-  return `${VIDRIFT_ORIGIN}/embed/tv/${tmdbId}/${season}/${episode}`
+  // AFTERSHOW already renders its own episode list beside the player. Hiding
+  // VidRift's duplicate Episodes control prevents it from crowding the
+  // timeline and bottom transport controls on narrower player widths.
+  return `${VIDRIFT_ORIGIN}/embed/tv/${tmdbId}/${season}/${episode}?hide=episodes`
 }
 
 // ── Incoming messages (from the VidRift iframe to AFTERSHOW) ──────────────
