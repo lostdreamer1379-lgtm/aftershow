@@ -122,7 +122,7 @@ export default function WatchPage() {
     // Do not leave the browser on a stale watch URL. Mobile browsers often
     // restore the last route when the app is reopened, which would otherwise
     // reopen the player after the user intentionally left the party.
-    navigate('/', { replace: true })
+    window.location.replace('/')
   }
 
   const copyPartyInvite = async () => {
