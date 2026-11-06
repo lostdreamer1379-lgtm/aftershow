@@ -26,6 +26,7 @@ export default function WatchPage() {
   const { data: profile } = useProfile()
   const { data: historyEntries } = useHistory()
   const upsertProgress = useUpsertProgress()
+  const [episodesOpen, setEpisodesOpen] = useState(true)
 
   // Default to autoplay-on for guests (matches the backend's own default);
   // signed-in users get their saved preference once the profile loads.
@@ -172,7 +173,7 @@ export default function WatchPage() {
     .map(s => ({ value: String(s.season_number), label: s.name }))
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+    <div className={`mx-auto ${episodesOpen ? 'max-w-7xl' : 'max-w-[1600px]'} px-4 sm:px-6 lg:px-8 py-6`}>
       <Link
         to={`/tv/${show.id}`}
         className="inline-flex items-center gap-1 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors mb-4"
@@ -180,7 +181,20 @@ export default function WatchPage() {
         <ArrowLeft size={16} /> {show.name}
       </Link>
 
-      <div className="grid lg:grid-cols-[1fr_320px] gap-6">
+      <div className="flex justify-end mb-3">
+        <button
+          type="button"
+          onClick={() => setEpisodesOpen(open => !open)}
+          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card)] hover:text-[var(--color-text-primary)] transition-colors"
+          aria-expanded={episodesOpen}
+          aria-controls="watch-episodes-sidebar"
+        >
+          {episodesOpen ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          {episodesOpen ? 'Theater mode' : 'Show episodes'}
+        </button>
+      </div>
+
+      <div className={episodesOpen ? 'grid lg:grid-cols-[1fr_320px] gap-6' : 'block'}>
         {/* Main column */}
         <div>
           <VidRiftPlayer
@@ -258,7 +272,7 @@ export default function WatchPage() {
         </div>
 
         {/* Sidebar: season selector + episode list */}
-        <div>
+        {episodesOpen && <div id="watch-episodes-sidebar">
           {seasonOptions.length > 1 && (
             <div className="mb-4">
               <Select
@@ -296,7 +310,7 @@ export default function WatchPage() {
               )
             })}
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   )
