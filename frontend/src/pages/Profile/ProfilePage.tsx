@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { User, LogOut, Pencil, Check, X } from 'lucide-react'
+import { User, LogOut, Pencil, Check, X, Clock3, Film, CheckCircle2, Play } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile'
 import { profileSchema, ProfileFormValues } from '@/lib/authValidation'
@@ -11,6 +11,8 @@ import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/hooks/useToast'
+import { useHistory } from '@/hooks/useHistory'
+import { useShowsByIds } from '@/hooks/useShowsByIds'
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth()
@@ -43,7 +45,25 @@ function AuthenticatedProfile({ userEmail, userId, onSignOut }: { userEmail: str
   const toast = useToast()
   const { data: profile, isLoading } = useProfile()
   const updateProfile = useUpdateProfile()
+  const { data: history = [], isLoading: historyLoading } = useHistory()
   const [editing, setEditing] = useState(false)
+
+  const historyShowIds = useMemo(() => [...new Set(history.map(entry => entry.tmdbTvId))], [history])
+  const { data: historyShows } = useShowsByIds(historyShowIds)
+
+  const activityStats = useMemo(() => {
+    const totalSeconds = history.reduce((total, entry) => {
+      const seconds = entry.completed && entry.duration ? entry.duration : entry.currentPosition
+      return total + Math.max(0, seconds || 0)
+    }, 0)
+    return {
+      series: historyShowIds.length,
+      episodes: history.length,
+      completed: history.filter(entry => entry.completed).length,
+      hours: Math.floor(totalSeconds / 3600),
+      minutes: Math.floor((totalSeconds % 3600) / 60),
+    }
+  }, [history, historyShowIds.length])
 
   const {
     register,
@@ -116,11 +136,57 @@ function AuthenticatedProfile({ userEmail, userId, onSignOut }: { userEmail: str
       </section>
 
       <section className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg p-6 mb-6">
-        <h2 className="font-semibold text-[var(--color-text-primary)] mb-1">Viewing activity</h2>
-        <p className="text-sm text-[var(--color-text-muted)]">
-          Series watched, episodes watched, seasons completed and total viewing time arrive in Phase 5
-          once watch history is tracked in the database.
-        </p>
+        <div className="flex items-start justify-between gap-4 mb-5">
+          <div>
+            <h2 className="font-semibold text-[var(--color-text-primary)] mb-1">Viewing activity</h2>
+            <p className="text-sm text-[var(--color-text-muted)]">A snapshot of your AFTERSHOW journey.</p>
+          </div>
+          <Link to="/history" className="text-xs text-[var(--color-accent)] hover:underline whitespace-nowrap">View history</Link>
+        </div>
+
+        {historyLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[1, 2, 3, 4].map(item => <div key={item} className="skeleton h-20 rounded-md" />)}
+          </div>
+        ) : history.length === 0 ? (
+          <div className="rounded-md border border-dashed border-[var(--color-border)] px-4 py-6 text-center">
+            <p className="text-sm text-[var(--color-text-secondary)]">Your viewing activity will appear here.</p>
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">Start an episode to begin building your history.</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+              <ActivityStat icon={<Film size={15} />} value={activityStats.series} label="Series" />
+              <ActivityStat icon={<Play size={15} />} value={activityStats.episodes} label="Episodes" />
+              <ActivityStat icon={<CheckCircle2 size={15} />} value={activityStats.completed} label="Completed" />
+              <ActivityStat icon={<Clock3 size={15} />} value={activityStats.hours ? `${activityStats.hours}h` : `${activityStats.minutes}m`} label="Time logged" />
+            </div>
+
+            <div className="border-t border-[var(--color-border-subtle)] pt-4">
+              <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-3">Recently watched</p>
+              <div className="space-y-2">
+                {history.slice(0, 4).map(entry => {
+                  const show = historyShows.find(item => item.id === entry.tmdbTvId)?.show
+                  return (
+                    <Link
+                      key={entry.id}
+                      to={`/watch/tv/${entry.tmdbTvId}/${entry.seasonNumber}/${entry.episodeNumber}`}
+                      className="flex items-center justify-between gap-3 rounded-md px-2 py-2 -mx-2 hover:bg-[var(--color-bg-card-hover)] transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm text-[var(--color-text-primary)] truncate">{show?.name ?? 'Loading series…'}</p>
+                        <p className="text-xs text-[var(--color-text-muted)]">S{entry.seasonNumber} · E{entry.episodeNumber}</p>
+                      </div>
+                      <span className={`flex-shrink-0 text-xs ${entry.completed ? 'text-[var(--color-success)]' : 'text-[var(--color-accent)]'}`}>
+                        {entry.completed ? 'Completed' : 'In progress'}
+                      </span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          </>
+        )}
       </section>
 
       <p className="text-sm text-[var(--color-text-muted)]">
@@ -130,6 +196,15 @@ function AuthenticatedProfile({ userEmail, userId, onSignOut }: { userEmail: str
 
       {isLoading && <p className="text-xs text-[var(--color-text-muted)] mt-4">Loading profile…</p>}
       <p className="text-xs text-[var(--color-text-muted)] mt-1">Account ID: {userId}</p>
+    </div>
+  )
+}
+
+function ActivityStat({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
+  return (
+    <div className="rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-primary)]/30 p-3">
+      <div className="flex items-center gap-1.5 text-[var(--color-accent)] mb-1">{icon}<span className="text-lg font-semibold text-[var(--color-text-primary)]">{value}</span></div>
+      <p className="text-xs text-[var(--color-text-muted)]">{label}</p>
     </div>
   )
 }

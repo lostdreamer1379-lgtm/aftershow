@@ -19,6 +19,14 @@ export default function HomePage() {
   // loading or if TMDB isn't configured yet.
   const featured = useMemo(() => trending.data?.results?.[0], [trending.data])
 
+  const timeMessage = useMemo(() => {
+    const hour = new Date().getHours()
+    if (hour < 5) return { greeting: 'Still up?', message: 'There is always time for one more episode.' }
+    if (hour < 12) return { greeting: 'Good morning', message: 'Start the day with a story worth settling into.' }
+    if (hour < 18) return { greeting: 'Good afternoon', message: 'Take a little time out for something worth watching.' }
+    return { greeting: 'Good evening', message: 'The night’s best viewing starts right here.' }
+  }, [])
+
   return (
     <div>
       {/* Cinematic hero */}
@@ -98,6 +106,12 @@ export default function HomePage() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
         {/* Continue Watching */}
         <section className="mb-10">
+          <div className="mb-5 border-l-2 border-[var(--color-accent)] pl-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-accent)] font-medium mb-1">
+              {timeMessage.greeting}
+            </p>
+            <p className="text-sm text-[var(--color-text-secondary)]">{timeMessage.message}</p>
+          </div>
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Continue Watching</h2>
           <ContinueWatchingRow />
         </section>

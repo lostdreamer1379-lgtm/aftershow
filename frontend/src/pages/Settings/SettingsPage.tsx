@@ -105,8 +105,8 @@ function AuthenticatedSettings() {
       <p className="text-sm text-[var(--color-text-muted)] mb-8">Viewing preferences for your account.</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="flex items-center justify-between p-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]">
-          <div>
+        <div className="flex items-center gap-4 p-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)]">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-[var(--color-text-primary)]">Autoplay next episode</p>
             <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
               Automatically continue to the next episode when one finishes.
@@ -116,13 +116,14 @@ function AuthenticatedSettings() {
             type="button"
             role="switch"
             aria-checked={autoplayNext}
+            aria-label="Autoplay next episode"
             onClick={() => setValue('autoplayNext', !autoplayNext, { shouldDirty: true })}
-            className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0"
+            className="relative h-7 w-12 flex-shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-card)]"
             style={{ background: autoplayNext ? 'var(--color-accent)' : 'var(--color-border)' }}
           >
             <span
-              className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform"
-              style={{ transform: autoplayNext ? 'translateX(22px)' : 'translateX(2px)' }}
+              className="absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-200"
+              style={{ transform: autoplayNext ? 'translateX(20px)' : 'translateX(0)' }}
             />
           </button>
         </div>
