@@ -12,6 +12,8 @@ import { getStillUrl } from '@/lib/tmdb-image'
 import { NextEpisodeInfo } from '@/types'
 import { useWatchParty, type WatchPartyPlayback } from '@/hooks/useWatchParty'
 
+type WatchPartyPlaybackDraft = Omit<WatchPartyPlayback, 'senderId' | 'sentAt'>
+
 export default function WatchPage() {
   const { id, season, episode } = useParams<{ id: string; season: string; episode: string }>()
   const navigate = useNavigate()
@@ -34,8 +36,8 @@ export default function WatchPage() {
   const [chatText, setChatText] = useState('')
   const partyCommandIdRef = useRef(0)
   const lastPartyBroadcastRef = useRef(0)
-  const latestPartyStateRef = useRef<WatchPartyPlayback | null>(null)
-  const partySendPlaybackRef = useRef<((message: Omit<WatchPartyPlayback, 'senderId' | 'sentAt'>) => void) | null>(null)
+  const latestPartyStateRef = useRef<WatchPartyPlaybackDraft | null>(null)
+  const partySendPlaybackRef = useRef<((message: WatchPartyPlaybackDraft) => void) | null>(null)
   const [episodesOpen, setEpisodesOpen] = useState(true)
   const [seasonMenuOpen, setSeasonMenuOpen] = useState(false)
   const seasonMenuRef = useRef<HTMLDivElement>(null)
