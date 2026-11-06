@@ -10,8 +10,16 @@ export const apiClient = axios.create({
   },
 })
 
-// Attach Supabase auth token to every request
+// Only user-owned endpoints need a Supabase token. Keeping public catalog
+// requests anonymous avoids an unnecessary session lookup and allows the
+// backend/CDN to cache them effectively.
+const protectedApiPrefixes = ['/profile', '/history', '/watchlist', '/collections']
+
 apiClient.interceptors.request.use(async (config) => {
+  const requestUrl = config.url ?? ''
+  const needsAuth = protectedApiPrefixes.some(prefix => requestUrl.startsWith(prefix))
+  if (!needsAuth) return config
+
   const { data: { session } } = await supabase.auth.getSession()
   if (session?.access_token) {
     config.headers.Authorization = `Bearer ${session.access_token}`

@@ -22,20 +22,20 @@ export function useTrending(page = 1) {
   return useQuery({ queryKey: tvKeys.trending(page), queryFn: () => tvService.getTrending(page) })
 }
 
-export function usePopular(page = 1) {
-  return useQuery({ queryKey: tvKeys.popular(page), queryFn: () => tvService.getPopular(page) })
+export function usePopular(page = 1, enabled = true) {
+  return useQuery({ queryKey: tvKeys.popular(page), queryFn: () => tvService.getPopular(page), enabled })
 }
 
-export function useTopRated(page = 1) {
-  return useQuery({ queryKey: tvKeys.topRated(page), queryFn: () => tvService.getTopRated(page) })
+export function useTopRated(page = 1, enabled = true) {
+  return useQuery({ queryKey: tvKeys.topRated(page), queryFn: () => tvService.getTopRated(page), enabled })
 }
 
-export function useAiringToday(page = 1) {
-  return useQuery({ queryKey: tvKeys.airingToday(page), queryFn: () => tvService.getAiringToday(page) })
+export function useAiringToday(page = 1, enabled = true) {
+  return useQuery({ queryKey: tvKeys.airingToday(page), queryFn: () => tvService.getAiringToday(page), enabled })
 }
 
-export function useOnTheAir(page = 1) {
-  return useQuery({ queryKey: tvKeys.onTheAir(page), queryFn: () => tvService.getOnTheAir(page) })
+export function useOnTheAir(page = 1, enabled = true) {
+  return useQuery({ queryKey: tvKeys.onTheAir(page), queryFn: () => tvService.getOnTheAir(page), enabled })
 }
 
 export function useSearchShows(query: string, page = 1) {

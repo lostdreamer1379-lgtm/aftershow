@@ -10,10 +10,19 @@ import { getBackdropUrl } from '@/lib/tmdb-image'
 
 export default function HomePage() {
   const trending = useTrending()
-  const popular = usePopular()
-  const topRated = useTopRated()
-  const airingToday = useAiringToday()
-  const onTheAir = useOnTheAir()
+  const [secondaryRowsReady, setSecondaryRowsReady] = useState(false)
+
+  // Let the hero and first row become interactive before competing for the
+  // connection with four more TMDB requests.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSecondaryRowsReady(true), 350)
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  const popular = usePopular(1, secondaryRowsReady)
+  const topRated = useTopRated(1, secondaryRowsReady)
+  const airingToday = useAiringToday(1, secondaryRowsReady)
+  const onTheAir = useOnTheAir(1, secondaryRowsReady)
 
   const heroShows = trending.data?.results ?? []
   const [heroIndex, setHeroIndex] = useState(0)
@@ -116,9 +125,11 @@ export default function HomePage() {
         {featured?.backdrop_path ? (
           <img
             key={featured.id}
-            src={getBackdropUrl(featured.backdrop_path, 'original')}
+            src={getBackdropUrl(featured.backdrop_path, 'w1280')}
             alt=""
             className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+            fetchPriority="high"
+            decoding="async"
           />
         ) : (
           <div
@@ -212,7 +223,7 @@ export default function HomePage() {
         <ShowRow
           title="Popular Series"
           shows={popular.data?.results}
-          isLoading={popular.isLoading}
+          isLoading={!secondaryRowsReady || popular.isLoading}
           isError={popular.isError}
           onRetry={() => popular.refetch()}
           viewAllHref="/explore"
@@ -220,7 +231,7 @@ export default function HomePage() {
         <ShowRow
           title="Top Rated"
           shows={topRated.data?.results}
-          isLoading={topRated.isLoading}
+          isLoading={!secondaryRowsReady || topRated.isLoading}
           isError={topRated.isError}
           onRetry={() => topRated.refetch()}
           viewAllHref="/explore"
@@ -228,7 +239,7 @@ export default function HomePage() {
         <ShowRow
           title="Airing Today"
           shows={airingToday.data?.results}
-          isLoading={airingToday.isLoading}
+          isLoading={!secondaryRowsReady || airingToday.isLoading}
           isError={airingToday.isError}
           onRetry={() => airingToday.refetch()}
           viewAllHref="/explore"
@@ -236,7 +247,7 @@ export default function HomePage() {
         <ShowRow
           title="Currently Airing"
           shows={onTheAir.data?.results}
-          isLoading={onTheAir.isLoading}
+          isLoading={!secondaryRowsReady || onTheAir.isLoading}
           isError={onTheAir.isError}
           onRetry={() => onTheAir.refetch()}
           viewAllHref="/explore"

@@ -59,6 +59,8 @@ export default function VidRiftPlayer({
   const hasReceivedMessage = useRef(false)
   const hasSentResume = useRef(false)
   const remoteCommandUntil = useRef(0)
+  const latestCurrentTime = useRef(0)
+  const pendingPartyCommand = useRef<PartyPlayerCommand | null>(null)
   const [slowToLoad, setSlowToLoad] = useState(false)
   const [retryKey, setRetryKey] = useState(0)
 
@@ -71,15 +73,35 @@ export default function VidRiftPlayer({
   useEffect(() => {
     hasReceivedMessage.current = false
     hasSentResume.current = false
+    latestCurrentTime.current = 0
+    pendingPartyCommand.current = null
     setSlowToLoad(false)
   }, [tmdbId, season, episode, retryKey])
 
-  useEffect(() => {
+  const applyPartyCommand = useCallback((command: PartyPlayerCommand) => {
     const win = iframeRef.current?.contentWindow
-    if (!win || !partyCommand) return
-    remoteCommandUntil.current = Date.now() + 1200
-    sendPlaybackCommand(win, partyCommand)
-  }, [partyCommand])
+    if (!win) {
+      pendingPartyCommand.current = command
+      return
+    }
+
+    // Ignore tiny heartbeat differences. Seeking for every small drift makes
+    // the embedded player feel like it is repeatedly fighting the user.
+    const hasPosition = command.currentTime !== undefined
+    const drift = hasPosition ? Math.abs(command.currentTime! - latestCurrentTime.current) : Infinity
+    if (command.action === 'seek' && drift < 1.25) return
+    if ((command.action === 'play' || command.action === 'pause') && hasPosition && drift >= 1.25) {
+      remoteCommandUntil.current = Date.now() + 1800
+    } else {
+      remoteCommandUntil.current = Date.now() + 1200
+    }
+    sendPlaybackCommand(win, command)
+    pendingPartyCommand.current = null
+  }, [])
+
+  useEffect(() => {
+    if (partyCommand) applyPartyCommand(partyCommand)
+  }, [applyPartyCommand, partyCommand])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -109,11 +131,15 @@ export default function VidRiftPlayer({
             sendResume(win, resumePosition)
             hasSentResume.current = true
           }
+          if (pendingPartyCommand.current) applyPartyCommand(pendingPartyCommand.current)
           break
         }
         case 'vidrift:progress': {
           const payload = parseProgressPayload(event.data)
-          if (payload) onProgress?.(payload, remoteCommandUntil.current > Date.now() ? 'remote' : 'local')
+          if (payload) {
+            latestCurrentTime.current = payload.currentTime
+            onProgress?.(payload, remoteCommandUntil.current > Date.now() ? 'remote' : 'local')
+          }
           break
         }
         case 'vidrift:paused':
@@ -136,7 +162,7 @@ export default function VidRiftPlayer({
           break
       }
     },
-    [nextEpisode, resumePosition, onProgress, onPaused, onUnpaused, onEpisodeChange, onNextUpPlay]
+    [applyPartyCommand, nextEpisode, resumePosition, onProgress, onPaused, onUnpaused, onEpisodeChange, onNextUpPlay]
   )
 
   useEffect(() => {

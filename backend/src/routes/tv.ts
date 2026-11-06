@@ -4,6 +4,16 @@ import { asyncHandler, ApiError } from '@/middleware/errorHandler.js'
 
 const router = Router()
 
+// TV catalog responses are public and change relatively slowly. This lets
+// Vercel serve repeat visits from its edge cache instead of waking a new
+// serverless function and waiting for TMDB on every request.
+router.use((req, res, next) => {
+  if (req.method === 'GET') {
+    res.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
+  }
+  next()
+})
+
 function requireTmdbConfigured() {
   if (!tmdbService.isConfigured()) {
     throw new ApiError(503, 'TMDB integration is not configured. Set TMDB_API_READ_ACCESS_TOKEN.')
@@ -44,6 +54,7 @@ router.get('/on-the-air', asyncHandler(async (req, res) => {
 
 router.get('/search', asyncHandler(async (req, res) => {
   requireTmdbConfigured()
+  res.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60')
   const { query, page } = req.query
   if (!query || typeof query !== 'string' || !query.trim()) {
     throw new ApiError(400, 'A "query" parameter is required.')

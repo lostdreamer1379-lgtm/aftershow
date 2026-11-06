@@ -104,5 +104,10 @@ export function sendPlaybackCommand(target: Window, command: { action: 'play' | 
     target.postMessage({ type: 'vidrift:resume', currentTime: command.currentTime }, VIDRIFT_ORIGIN)
     return
   }
+  // For a play/pause broadcast, correct the position first when the sender's
+  // clock is ahead, then apply the transport action.
+  if (command.currentTime !== undefined) {
+    target.postMessage({ type: 'vidrift:resume', currentTime: command.currentTime }, VIDRIFT_ORIGIN)
+  }
   target.postMessage({ type: `vidrift:${command.action}` }, VIDRIFT_ORIGIN)
 }

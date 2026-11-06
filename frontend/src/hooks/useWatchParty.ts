@@ -64,6 +64,21 @@ export function useWatchParty({ roomId, userId, displayName, onPlayback }: UseWa
         if (status === 'SUBSCRIBED') {
           setConnected(true)
           await channel.track({ userId, displayName })
+          // Ask an existing participant for the room's current playback state.
+          // The page responds with its latest local state, so a late joiner does
+          // not have to wait for the next manual play/pause/seek action.
+          await channel.send({
+            type: 'broadcast',
+            event: 'playback',
+            payload: {
+              type: 'sync-request',
+              tmdbId: 0,
+              season: 0,
+              episode: 0,
+              senderId: userId,
+              sentAt: Date.now(),
+            } satisfies WatchPartyPlayback,
+          })
         }
       })
 

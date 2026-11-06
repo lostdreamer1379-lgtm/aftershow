@@ -34,6 +34,8 @@ export default function WatchPage() {
   const [chatText, setChatText] = useState('')
   const partyCommandIdRef = useRef(0)
   const lastPartyBroadcastRef = useRef(0)
+  const latestPartyStateRef = useRef<WatchPartyPlayback | null>(null)
+  const partySendPlaybackRef = useRef<((message: Omit<WatchPartyPlayback, 'senderId' | 'sentAt'>) => void) | null>(null)
   const [episodesOpen, setEpisodesOpen] = useState(true)
   const [seasonMenuOpen, setSeasonMenuOpen] = useState(false)
   const seasonMenuRef = useRef<HTMLDivElement>(null)
@@ -83,6 +85,11 @@ export default function WatchPage() {
   const resumePosition = existingEntry && !existingEntry.completed ? existingEntry.currentPosition : undefined
 
   const handlePartyPlayback = useCallback((message: WatchPartyPlayback) => {
+    if (message.type === 'sync-request') {
+      const state = latestPartyStateRef.current
+      if (state) partySendPlaybackRef.current?.(state)
+      return
+    }
     if (message.type === 'episode') {
       if (message.tmdbId === showId && (message.season !== seasonNumber || message.episode !== episodeNumber)) {
         navigate(watchUrl(message.season, message.episode, message.tmdbId), { replace: true })
@@ -159,9 +166,11 @@ export default function WatchPage() {
         lastSavedAtRef.current = now
         saveProgress(data)
       }
-      if (source === 'local' && partyRoomId && now - lastPartyBroadcastRef.current > 2000) {
+      if (source === 'local' && partyRoomId && now - lastPartyBroadcastRef.current > 750) {
         lastPartyBroadcastRef.current = now
-        party.sendPlayback({ type: 'playback', tmdbId: showId!, season: seasonNumber!, episode: episodeNumber!, action: 'seek', currentTime: data.currentTime, duration: data.duration })
+        const state = { type: 'playback' as const, tmdbId: showId!, season: seasonNumber!, episode: episodeNumber!, action: 'seek' as const, currentTime: data.currentTime, duration: data.duration }
+        latestPartyStateRef.current = state
+        party.sendPlayback(state)
       }
     },
     [episodeNumber, party, partyRoomId, saveProgress, seasonNumber, showId]
@@ -170,15 +179,21 @@ export default function WatchPage() {
   const handlePaused = useCallback((source: 'local' | 'remote' = 'local') => {
     if (latestProgressRef.current) saveProgress(latestProgressRef.current)
     if (source === 'local' && partyRoomId) {
-      party.sendPlayback({ type: 'playback', tmdbId: showId!, season: seasonNumber!, episode: episodeNumber!, action: 'pause', currentTime: latestProgressRef.current?.currentTime })
+      const state = { type: 'playback' as const, tmdbId: showId!, season: seasonNumber!, episode: episodeNumber!, action: 'pause' as const, currentTime: latestProgressRef.current?.currentTime }
+      latestPartyStateRef.current = state
+      party.sendPlayback(state)
     }
   }, [episodeNumber, party, partyRoomId, saveProgress, seasonNumber, showId])
 
   const handleUnpaused = useCallback((source: 'local' | 'remote' = 'local') => {
     if (source === 'local' && partyRoomId) {
-      party.sendPlayback({ type: 'playback', tmdbId: showId!, season: seasonNumber!, episode: episodeNumber!, action: 'play', currentTime: latestProgressRef.current?.currentTime })
+      const state = { type: 'playback' as const, tmdbId: showId!, season: seasonNumber!, episode: episodeNumber!, action: 'play' as const, currentTime: latestProgressRef.current?.currentTime }
+      latestPartyStateRef.current = state
+      party.sendPlayback(state)
     }
   }, [episodeNumber, party, partyRoomId, seasonNumber, showId])
+
+  partySendPlaybackRef.current = party.sendPlayback
 
   // Flush whatever progress we have whenever the episode changes or the
   // page unmounts, so a quick switch or navigating away never loses it.
@@ -190,7 +205,9 @@ export default function WatchPage() {
 
   useEffect(() => {
     if (partyRoomId && party.connected && showId && seasonNumber !== undefined && episodeNumber !== undefined) {
-      party.sendPlayback({ type: 'episode', tmdbId: showId, season: seasonNumber, episode: episodeNumber })
+      const state = { type: 'episode' as const, tmdbId: showId, season: seasonNumber, episode: episodeNumber }
+      latestPartyStateRef.current = state
+      party.sendPlayback(state)
     }
   }, [episodeNumber, party.connected, partyRoomId, party.sendPlayback, seasonNumber, showId])
 
