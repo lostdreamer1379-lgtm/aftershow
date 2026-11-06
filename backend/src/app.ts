@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import type { RequestHandler } from 'express'
 import { default as helmet } from 'helmet'
 import { rateLimit } from 'express-rate-limit'
 import { env } from '@/config/env.js'
@@ -25,8 +26,13 @@ import collectionsRouter from '@/routes/collections.js'
 
 const app = express()
 
+// Vercel's Node TypeScript analyzer resolves Helmet's ESM/CJS export as a
+// module namespace, although the runtime default export is the middleware
+// function. Keep the runtime import and narrow the type at this boundary.
+const helmetMiddleware = helmet as unknown as (options?: Record<string, unknown>) => RequestHandler
+
 // ── Security & parsing middleware ─────────────
-app.use(helmet())
+app.use(helmetMiddleware())
 app.use(
   cors({
     origin: env.frontendUrl,
