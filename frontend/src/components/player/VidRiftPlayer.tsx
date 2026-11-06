@@ -8,8 +8,15 @@ import {
   parseEpisodePayload,
   sendNextUpInfo,
   sendResume,
+  sendPlaybackCommand,
 } from '@/lib/vidrift'
 import { NextEpisodeInfo } from '@/types'
+
+export interface PartyPlayerCommand {
+  id: number
+  action: 'play' | 'pause' | 'seek'
+  currentTime?: number
+}
 
 interface VidRiftPlayerProps {
   tmdbId: number
@@ -19,13 +26,14 @@ interface VidRiftPlayerProps {
   resumePosition?: number
   /** The actual next episode, from real TMDB season data — or null at the series finale. */
   nextEpisode: NextEpisodeInfo | null
-  onProgress?: (data: { currentTime: number; duration?: number }) => void
-  onPaused?: () => void
-  onUnpaused?: () => void
+  onProgress?: (data: { currentTime: number; duration?: number }, source?: 'local' | 'remote') => void
+  onPaused?: (source?: 'local' | 'remote') => void
+  onUnpaused?: (source?: 'local' | 'remote') => void
   /** Fired when the player reports it internally changed episode (keeps our route in sync). */
   onEpisodeChange?: (season: number, episode: number) => void
   /** Fired when the player signals it's moving to the next episode. */
   onNextUpPlay?: () => void
+  partyCommand?: PartyPlayerCommand | null
 }
 
 // How long to wait for the very first message from the iframe before
@@ -45,11 +53,13 @@ export default function VidRiftPlayer({
   onUnpaused,
   onEpisodeChange,
   onNextUpPlay,
+  partyCommand,
 }: VidRiftPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const hasReceivedMessage = useRef(false)
   const hasSentResume = useRef(false)
+  const remoteCommandUntil = useRef(0)
   const [slowToLoad, setSlowToLoad] = useState(false)
   const [retryKey, setRetryKey] = useState(0)
 
@@ -64,6 +74,13 @@ export default function VidRiftPlayer({
     hasSentResume.current = false
     setSlowToLoad(false)
   }, [tmdbId, season, episode, retryKey])
+
+  useEffect(() => {
+    const win = iframeRef.current?.contentWindow
+    if (!win || !partyCommand) return
+    remoteCommandUntil.current = Date.now() + 1200
+    sendPlaybackCommand(win, partyCommand)
+  }, [partyCommand])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -97,14 +114,14 @@ export default function VidRiftPlayer({
         }
         case 'vidrift:progress': {
           const payload = parseProgressPayload(event.data)
-          if (payload) onProgress?.(payload)
+          if (payload) onProgress?.(payload, remoteCommandUntil.current > Date.now() ? 'remote' : 'local')
           break
         }
         case 'vidrift:paused':
-          onPaused?.()
+          onPaused?.(remoteCommandUntil.current > Date.now() ? 'remote' : 'local')
           break
         case 'vidrift:unpaused':
-          onUnpaused?.()
+          onUnpaused?.(remoteCommandUntil.current > Date.now() ? 'remote' : 'local')
           break
         case 'vidrift:episode': {
           const payload = parseEpisodePayload(event.data)

@@ -98,3 +98,11 @@ export function sendNextUpInfo(target: Window, next: NextEpisodeInfo | null) {
 export function sendResume(target: Window, currentTime: number) {
   target.postMessage({ type: 'vidrift:resume', currentTime }, VIDRIFT_ORIGIN)
 }
+
+export function sendPlaybackCommand(target: Window, command: { action: 'play' | 'pause' | 'seek'; currentTime?: number }) {
+  if (command.action === 'seek' && command.currentTime !== undefined) {
+    target.postMessage({ type: 'vidrift:resume', currentTime: command.currentTime }, VIDRIFT_ORIGIN)
+    return
+  }
+  target.postMessage({ type: `vidrift:${command.action}` }, VIDRIFT_ORIGIN)
+}

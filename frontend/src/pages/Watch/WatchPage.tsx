@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, ChevronDown, ArrowLeft, Play, Check } from 'lucide-react'
-import VidRiftPlayer from '@/components/player/VidRiftPlayer'
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
+import { ChevronLeft, ChevronRight, ChevronDown, ArrowLeft, Play, Check, Users, Copy, MessageCircle, X } from 'lucide-react'
+import VidRiftPlayer, { type PartyPlayerCommand } from '@/components/player/VidRiftPlayer'
 import ErrorState from '@/components/ui/ErrorState'
 import { useShowDetails, useSeasonDetails } from '@/hooks/useTV'
 import { useHistory, useUpsertProgress } from '@/hooks/useHistory'
@@ -10,10 +10,12 @@ import { useAuth } from '@/contexts/AuthContext'
 import { getAdjacentEpisodes } from '@/lib/episodeNav'
 import { getStillUrl } from '@/lib/tmdb-image'
 import { NextEpisodeInfo } from '@/types'
+import { useWatchParty, type WatchPartyPlayback } from '@/hooks/useWatchParty'
 
 export default function WatchPage() {
   const { id, season, episode } = useParams<{ id: string; season: string; episode: string }>()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuth()
 
   const showId = id ? parseInt(id, 10) : undefined
@@ -25,6 +27,13 @@ export default function WatchPage() {
   const { data: profile } = useProfile()
   const { data: historyEntries } = useHistory()
   const upsertProgress = useUpsertProgress()
+  const partyRoomId = searchParams.get('party')
+  const partyQuery = partyRoomId ? `?party=${encodeURIComponent(partyRoomId)}` : ''
+  const watchUrl = (s: number, e: number, tmdbId = showId) => `/watch/tv/${tmdbId}/${s}/${e}${partyQuery}`
+  const [partyCommand, setPartyCommand] = useState<PartyPlayerCommand | null>(null)
+  const [chatText, setChatText] = useState('')
+  const partyCommandIdRef = useRef(0)
+  const lastPartyBroadcastRef = useRef(0)
   const [episodesOpen, setEpisodesOpen] = useState(true)
   const [seasonMenuOpen, setSeasonMenuOpen] = useState(false)
   const seasonMenuRef = useRef<HTMLDivElement>(null)
@@ -73,6 +82,43 @@ export default function WatchPage() {
   )
   const resumePosition = existingEntry && !existingEntry.completed ? existingEntry.currentPosition : undefined
 
+  const handlePartyPlayback = useCallback((message: WatchPartyPlayback) => {
+    if (message.type === 'episode') {
+      if (message.tmdbId === showId && (message.season !== seasonNumber || message.episode !== episodeNumber)) {
+        navigate(watchUrl(message.season, message.episode, message.tmdbId), { replace: true })
+      }
+      return
+    }
+    if (message.type !== 'playback' || message.tmdbId !== showId || message.season !== seasonNumber || message.episode !== episodeNumber || !message.action) return
+    partyCommandIdRef.current += 1
+    setPartyCommand({ id: partyCommandIdRef.current, action: message.action, currentTime: message.currentTime })
+  }, [episodeNumber, navigate, partyQuery, seasonNumber, showId])
+
+  const party = useWatchParty({
+    roomId: partyRoomId,
+    userId: user?.id,
+    displayName: profile?.displayName || user?.email?.split('@')[0] || 'Guest',
+    onPlayback: handlePartyPlayback,
+  })
+
+  const createParty = () => {
+    const roomId = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()
+    const next = new URLSearchParams(searchParams)
+    next.set('party', roomId)
+    setSearchParams(next)
+  }
+
+  const leaveParty = () => {
+    const next = new URLSearchParams(searchParams)
+    next.delete('party')
+    setSearchParams(next)
+    setChatText('')
+  }
+
+  const copyPartyInvite = async () => {
+    await navigator.clipboard?.writeText(window.location.href)
+  }
+
   // ── Progress persistence ──────────────────────
   // vidrift:progress fires frequently; we throttle actual writes to the
   // backend and always flush on pause and on leaving the episode, so
@@ -106,20 +152,33 @@ export default function WatchPage() {
   }, [saveProgress])
 
   const handleProgress = useCallback(
-    (data: { currentTime: number; duration?: number }) => {
+    (data: { currentTime: number; duration?: number }, source: 'local' | 'remote' = 'local') => {
       latestProgressRef.current = data
       const now = Date.now()
       if (now - lastSavedAtRef.current > 15000) {
         lastSavedAtRef.current = now
         saveProgress(data)
       }
+      if (source === 'local' && partyRoomId && now - lastPartyBroadcastRef.current > 2000) {
+        lastPartyBroadcastRef.current = now
+        party.sendPlayback({ type: 'playback', tmdbId: showId!, season: seasonNumber!, episode: episodeNumber!, action: 'seek', currentTime: data.currentTime, duration: data.duration })
+      }
     },
-    [saveProgress]
+    [episodeNumber, party, partyRoomId, saveProgress, seasonNumber, showId]
   )
 
-  const handlePaused = useCallback(() => {
+  const handlePaused = useCallback((source: 'local' | 'remote' = 'local') => {
     if (latestProgressRef.current) saveProgress(latestProgressRef.current)
-  }, [saveProgress])
+    if (source === 'local' && partyRoomId) {
+      party.sendPlayback({ type: 'playback', tmdbId: showId!, season: seasonNumber!, episode: episodeNumber!, action: 'pause', currentTime: latestProgressRef.current?.currentTime })
+    }
+  }, [episodeNumber, party, partyRoomId, saveProgress, seasonNumber, showId])
+
+  const handleUnpaused = useCallback((source: 'local' | 'remote' = 'local') => {
+    if (source === 'local' && partyRoomId) {
+      party.sendPlayback({ type: 'playback', tmdbId: showId!, season: seasonNumber!, episode: episodeNumber!, action: 'play', currentTime: latestProgressRef.current?.currentTime })
+    }
+  }, [episodeNumber, party, partyRoomId, seasonNumber, showId])
 
   // Flush whatever progress we have whenever the episode changes or the
   // page unmounts, so a quick switch or navigating away never loses it.
@@ -130,19 +189,26 @@ export default function WatchPage() {
   }, [showId, seasonNumber, episodeNumber])
 
   useEffect(() => {
+    if (partyRoomId && party.connected && showId && seasonNumber !== undefined && episodeNumber !== undefined) {
+      party.sendPlayback({ type: 'episode', tmdbId: showId, season: seasonNumber, episode: episodeNumber })
+    }
+  }, [episodeNumber, party.connected, partyRoomId, party.sendPlayback, seasonNumber, showId])
+
+  useEffect(() => {
     // Reset per-episode local state when the URL's episode changes.
     latestProgressRef.current = null
     lastSavedAtRef.current = 0
+    setPartyCommand(null)
     setManualNextPrompt(false)
   }, [showId, seasonNumber, episodeNumber])
 
   const handleEpisodeChangeFromPlayer = useCallback(
     (s: number, e: number) => {
       if (s !== seasonNumber || e !== episodeNumber) {
-        navigate(`/watch/tv/${showId}/${s}/${e}`, { replace: true })
+        navigate(watchUrl(s, e), { replace: true })
       }
     },
-    [seasonNumber, episodeNumber, showId, navigate]
+    [seasonNumber, episodeNumber, partyQuery, showId, navigate]
   )
 
   const handleNextUpPlay = useCallback(() => {
@@ -154,11 +220,11 @@ export default function WatchPage() {
 
     if (!nextTarget) return
     if (autoplayNext) {
-      navigate(`/watch/tv/${showId}/${nextTarget.season}/${nextTarget.episode}`)
+      navigate(watchUrl(nextTarget.season, nextTarget.episode))
     } else {
       setManualNextPrompt(true)
     }
-  }, [nextTarget, autoplayNext, showId, navigate, saveProgress])
+  }, [nextTarget, autoplayNext, partyQuery, showId, navigate, saveProgress])
 
   if (showLoading || seasonLoading) {
     return (
@@ -215,9 +281,77 @@ export default function WatchPage() {
             nextEpisode={nextEpisodeInfo}
             onProgress={handleProgress}
             onPaused={handlePaused}
+            onUnpaused={handleUnpaused}
             onEpisodeChange={handleEpisodeChangeFromPlayer}
             onNextUpPlay={handleNextUpPlay}
+            partyCommand={partyCommand}
           />
+
+          <section className="mt-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-card)] p-4">
+            {!partyRoomId ? (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-md bg-[var(--color-accent-subtle)] p-2 text-[var(--color-accent)]"><Users size={17} /></div>
+                  <div>
+                    <p className="text-sm font-medium text-[var(--color-text-primary)]">Watch together</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">Sync playback and chat with friends in a private room.</p>
+                  </div>
+                </div>
+                {user ? (
+                  <button type="button" onClick={createParty} className="rounded-md bg-[var(--color-accent)] px-3 py-2 text-xs font-medium text-[var(--color-bg-primary)] hover:bg-[var(--color-accent-hover)] transition-colors">
+                    Start watch party
+                  </button>
+                ) : (
+                  <Link to="/login" className="text-xs text-[var(--color-accent)] hover:underline">Sign in to start</Link>
+                )}
+              </div>
+            ) : (
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-md bg-[var(--color-accent-subtle)] p-2 text-[var(--color-accent)]"><MessageCircle size={17} /></div>
+                    <div>
+                      <p className="text-sm font-medium text-[var(--color-text-primary)]">Watch party</p>
+                      <p className="text-xs text-[var(--color-text-muted)]">{party.connected ? `${party.participantCount} participant${party.participantCount === 1 ? '' : 's'} online` : 'Connecting…'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={copyPartyInvite} className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] transition-colors"><Copy size={13} /> Copy invite</button>
+                    <button type="button" onClick={leaveParty} aria-label="Close watch party" className="rounded-md p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)] transition-colors"><X size={15} /></button>
+                  </div>
+                </div>
+
+                <div className="mt-4 max-h-48 space-y-2 overflow-y-auto rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-primary)]/40 p-3">
+                  {party.messages.length === 0 ? (
+                    <p className="py-5 text-center text-xs text-[var(--color-text-muted)]">Room chat is ready. Say hello.</p>
+                  ) : party.messages.map(message => (
+                    <div key={message.id}>
+                      <span className="text-xs font-medium text-[var(--color-accent)]">{message.senderName}</span>
+                      <p className="text-sm text-[var(--color-text-secondary)] break-words">{message.text}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <form
+                  className="mt-3 flex gap-2"
+                  onSubmit={event => {
+                    event.preventDefault()
+                    party.sendChat(chatText)
+                    setChatText('')
+                  }}
+                >
+                  <input
+                    value={chatText}
+                    onChange={event => setChatText(event.target.value)}
+                    placeholder="Send a message…"
+                    maxLength={500}
+                    className="min-w-0 flex-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)]"
+                  />
+                  <button type="submit" disabled={!party.connected || !chatText.trim()} className="rounded-md bg-[var(--color-accent)] px-3 py-2 text-xs font-medium text-[var(--color-bg-primary)] disabled:cursor-not-allowed disabled:opacity-40">Send</button>
+                </form>
+              </div>
+            )}
+          </section>
 
           {manualNextPrompt && nextEpisodeInfo && (
             <div className="mt-4 flex items-center gap-4 p-4 rounded-lg border border-[var(--color-accent)] bg-[var(--color-accent-subtle)]">
@@ -231,7 +365,7 @@ export default function WatchPage() {
                 </p>
               </div>
               <button
-                onClick={() => navigate(`/watch/tv/${showId}/${nextEpisodeInfo.season}/${nextEpisodeInfo.episode}`)}
+                onClick={() => navigate(watchUrl(nextEpisodeInfo.season, nextEpisodeInfo.episode))}
                 className="flex-shrink-0 inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md bg-[var(--color-accent)] text-[var(--color-bg-primary)] hover:bg-[var(--color-accent-hover)] transition-colors"
               >
                 <Play size={14} fill="currentColor" /> Play
@@ -259,7 +393,7 @@ export default function WatchPage() {
             <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-4">
               {prevTarget ? (
                 <button
-                  onClick={() => navigate(`/watch/tv/${showId}/${prevTarget.season}/${prevTarget.episode}`)}
+                  onClick={() => navigate(watchUrl(prevTarget.season, prevTarget.episode))}
                   className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
                 >
                   <ChevronLeft size={16} /> Previous
@@ -268,7 +402,7 @@ export default function WatchPage() {
 
               {nextTarget ? (
                 <button
-                  onClick={() => navigate(`/watch/tv/${showId}/${nextTarget.season}/${nextTarget.episode}`)}
+                  onClick={() => navigate(watchUrl(nextTarget.season, nextTarget.episode))}
                   className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
                 >
                   Next Episode <ChevronRight size={16} />
@@ -323,7 +457,7 @@ export default function WatchPage() {
                       aria-selected={selected}
                       onClick={() => {
                         setSeasonMenuOpen(false)
-                        navigate(`/watch/tv/${showId}/${option.value}/1`)
+                        navigate(watchUrl(Number(option.value), 1))
                       }}
                       className={`flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-sm transition-colors ${
                         selected
@@ -348,7 +482,7 @@ export default function WatchPage() {
               return (
                 <button
                   key={ep.id}
-                  onClick={() => navigate(`/watch/tv/${showId}/${seasonNumber}/${ep.episode_number}`)}
+                  onClick={() => navigate(watchUrl(seasonNumber, ep.episode_number))}
                   className={`w-full flex gap-3 p-2 rounded-md text-left transition-colors ${
                     isCurrent ? 'bg-[var(--color-accent-subtle)] border border-[var(--color-accent)]' : 'hover:bg-[var(--color-bg-card)] border border-transparent'
                   }`}
