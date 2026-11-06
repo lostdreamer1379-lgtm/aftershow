@@ -87,6 +87,14 @@ export default function WatchPage() {
     [user, showId, seasonNumber, episodeNumber, upsertProgress]
   )
 
+  const saveProgressRef = useRef(saveProgress)
+
+  // Keep the cleanup callback current without making the cleanup effect itself
+  // rerun whenever the React Query mutation changes state.
+  useEffect(() => {
+    saveProgressRef.current = saveProgress
+  }, [saveProgress])
+
   const handleProgress = useCallback(
     (data: { currentTime: number; duration?: number }) => {
       latestProgressRef.current = data
@@ -107,9 +115,9 @@ export default function WatchPage() {
   // page unmounts, so a quick switch or navigating away never loses it.
   useEffect(() => {
     return () => {
-      if (latestProgressRef.current) saveProgress(latestProgressRef.current)
+      if (latestProgressRef.current) saveProgressRef.current(latestProgressRef.current)
     }
-  }, [showId, seasonNumber, episodeNumber, saveProgress])
+  }, [showId, seasonNumber, episodeNumber])
 
   useEffect(() => {
     // Reset per-episode local state when the URL's episode changes.
