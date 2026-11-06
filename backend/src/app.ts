@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
-import helmet from 'helmet'
-import rateLimit from 'express-rate-limit'
+import { default as helmet } from 'helmet'
+import { rateLimit } from 'express-rate-limit'
 import { env } from '@/config/env.js'
 import { notFoundHandler, errorHandler } from '@/middleware/errorHandler.js'
 
