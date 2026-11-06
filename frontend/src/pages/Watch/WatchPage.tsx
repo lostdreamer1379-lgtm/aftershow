@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, ArrowLeft, Play, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, ArrowLeft, Play, Check } from 'lucide-react'
 import VidRiftPlayer from '@/components/player/VidRiftPlayer'
-import Select from '@/components/ui/Select'
 import ErrorState from '@/components/ui/ErrorState'
 import { useShowDetails, useSeasonDetails } from '@/hooks/useTV'
 import { useHistory, useUpsertProgress } from '@/hooks/useHistory'
@@ -27,6 +26,16 @@ export default function WatchPage() {
   const { data: historyEntries } = useHistory()
   const upsertProgress = useUpsertProgress()
   const [episodesOpen, setEpisodesOpen] = useState(true)
+  const [seasonMenuOpen, setSeasonMenuOpen] = useState(false)
+  const seasonMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const closeSeasonMenu = (event: MouseEvent) => {
+      if (!seasonMenuRef.current?.contains(event.target as Node)) setSeasonMenuOpen(false)
+    }
+    document.addEventListener('mousedown', closeSeasonMenu)
+    return () => document.removeEventListener('mousedown', closeSeasonMenu)
+  }, [])
 
   // Default to autoplay-on for guests (matches the backend's own default);
   // signed-in users get their saved preference once the profile loads.
@@ -194,7 +203,7 @@ export default function WatchPage() {
         </button>
       </div>
 
-      <div className={episodesOpen ? 'grid lg:grid-cols-[1fr_320px] gap-6' : 'block'}>
+      <div className={`watch-layout ${episodesOpen ? '' : 'is-theater'}`}>
         {/* Main column */}
         <div>
           <VidRiftPlayer
@@ -272,14 +281,62 @@ export default function WatchPage() {
         </div>
 
         {/* Sidebar: season selector + episode list */}
-        {episodesOpen && <div id="watch-episodes-sidebar">
+        <aside
+          id="watch-episodes-sidebar"
+          className={`watch-sidebar ${episodesOpen ? '' : 'is-collapsed'}`}
+          aria-hidden={!episodesOpen}
+        >
           {seasonOptions.length > 1 && (
-            <div className="mb-4">
-              <Select
-                value={String(seasonNumber)}
-                onChange={e => navigate(`/watch/tv/${showId}/${e.target.value}/1`)}
-                options={seasonOptions}
-              />
+            <div className="relative mb-4" ref={seasonMenuRef}>
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-[var(--color-text-muted)]">Season</p>
+              <button
+                type="button"
+                onClick={() => setSeasonMenuOpen(open => !open)}
+                className={`flex h-11 w-full items-center justify-between rounded-lg border px-3.5 text-left text-sm transition-all duration-200 ${
+                  seasonMenuOpen
+                    ? 'border-[var(--color-accent)] bg-[var(--color-bg-elevated)] shadow-[0_0_0_3px_var(--color-accent-subtle)]'
+                    : 'border-[var(--color-border)] bg-[var(--color-bg-card)] hover:border-[var(--color-accent)] hover:bg-[var(--color-bg-card-hover)]'
+                }`}
+                aria-haspopup="listbox"
+                aria-expanded={seasonMenuOpen}
+              >
+                <span className="font-medium text-[var(--color-text-primary)]">
+                  {seasonOptions.find(option => option.value === String(seasonNumber))?.label ?? `Season ${seasonNumber}`}
+                </span>
+                <ChevronDown size={17} className={`text-[var(--color-text-muted)] transition-transform duration-200 ${seasonMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              <div
+                className={`absolute left-0 right-0 top-[calc(100%+8px)] z-30 origin-top rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1.5 shadow-2xl transition-all duration-200 ${
+                  seasonMenuOpen ? 'pointer-events-auto scale-y-100 opacity-100' : 'pointer-events-none scale-y-95 opacity-0'
+                }`}
+                role="listbox"
+                aria-label="Select season"
+              >
+                {seasonOptions.map(option => {
+                  const selected = option.value === String(seasonNumber)
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      onClick={() => {
+                        setSeasonMenuOpen(false)
+                        navigate(`/watch/tv/${showId}/${option.value}/1`)
+                      }}
+                      className={`flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-sm transition-colors ${
+                        selected
+                          ? 'bg-[var(--color-accent-subtle)] text-[var(--color-accent)]'
+                          : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-card-hover)] hover:text-[var(--color-text-primary)]'
+                      }`}
+                    >
+                      {option.label}
+                      {selected && <Check size={15} />}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           )}
           <div className="space-y-1.5 max-h-[600px] overflow-y-auto pr-1">
@@ -310,7 +367,7 @@ export default function WatchPage() {
               )
             })}
           </div>
-        </div>}
+        </aside>
       </div>
     </div>
   )
