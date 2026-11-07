@@ -50,9 +50,9 @@ export default function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      navigate(`/explore?q=${encodeURIComponent(searchQuery.trim())}`)
-      setSearchOpen(false)
-      setSearchQuery('')
+      const query = searchQuery.trim()
+      closeSearch()
+      navigate(`/explore?q=${encodeURIComponent(query)}`)
     }
   }
 
@@ -62,8 +62,8 @@ export default function Header() {
   }
 
   const openSuggestion = (id: number) => {
-    navigate(`/tv/${id}`)
     closeSearch()
+    navigate(`/tv/${id}`)
   }
 
   return (
@@ -108,7 +108,7 @@ export default function Header() {
 
           {/* Actions */}
           <div className="flex items-center gap-1">
-            <IconButton onClick={() => setSearchOpen(true)} aria-label="Search" size="sm">
+            <IconButton onClick={() => { setMenuOpen(false); setSearchOpen(true) }} aria-label="Search" size="sm">
               <Search size={18} />
             </IconButton>
             <Link
