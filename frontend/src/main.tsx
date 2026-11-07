@@ -15,5 +15,5 @@ if (bootSplash) {
   window.setTimeout(() => {
     bootSplash.classList.add('is-hidden')
     window.setTimeout(() => bootSplash.remove(), 500)
-  }, 220)
+  }, 1250)
 }

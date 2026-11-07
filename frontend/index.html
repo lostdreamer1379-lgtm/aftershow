@@ -27,20 +27,22 @@
     <style>
       #boot-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;align-content:center;gap:18px;overflow:hidden;background:#05070d;color:#f5f7ff;transition:opacity .45s ease,visibility .45s ease}
       #boot-splash.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
-      .boot-mark{position:relative;width:88px;height:88px;display:grid;place-items:center;border:1px solid rgba(94,168,255,.45);border-radius:25px;background:linear-gradient(145deg,#12233b,#07101f);box-shadow:0 0 0 8px rgba(94,168,255,.06),0 0 45px rgba(66,232,135,.2);animation:boot-mark-in .9s cubic-bezier(.2,.8,.2,1) both,boot-mark-float 2.8s ease-in-out .9s infinite}
+      .boot-mark{position:relative;width:88px;height:88px;display:grid;place-items:center;overflow:hidden;border:1px solid rgba(94,168,255,.45);border-radius:25px;background:linear-gradient(145deg,#12233b,#07101f);box-shadow:0 0 0 8px rgba(94,168,255,.06),0 0 45px rgba(66,232,135,.2);animation:boot-mark-in .9s cubic-bezier(.2,.8,.2,1) both,boot-mark-float 2.8s ease-in-out .9s infinite}
+      .boot-mark:after{content:"";position:absolute;inset:-60% auto -60% -35%;width:28%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);transform:rotate(25deg);animation:boot-shine 1.6s ease-in-out .7s both}
       .boot-mark svg{width:58px;height:58px}
       .boot-orbit{position:absolute;border:1px solid rgba(94,168,255,.18);border-radius:999px;animation:boot-orbit 4s linear infinite}
       .boot-orbit-one{width:190px;height:190px}
       .boot-orbit-two{width:270px;height:270px;border-color:rgba(66,232,135,.1);animation-direction:reverse;animation-duration:6s}
       .boot-wordmark{font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.34em;padding-left:.34em;color:#dce8fa;animation:boot-copy-in .8s ease .25s both}
       .boot-line{width:72px;height:2px;overflow:hidden;border-radius:99px;background:#14233b;animation:boot-copy-in .8s ease .4s both}
-      .boot-line span{display:block;width:42%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#5ea8ff,#42e887);animation:boot-progress 1.3s ease-in-out infinite}
+      .boot-line span{display:block;width:42%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#5ea8ff,#42e887);animation:boot-progress 1.8s ease-in-out infinite}
       @keyframes boot-mark-in{from{opacity:0;transform:scale(.72) rotate(-8deg)}to{opacity:1;transform:scale(1) rotate(0)}}
       @keyframes boot-mark-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+      @keyframes boot-shine{0%{transform:translateX(-180%) rotate(25deg);opacity:0}25%{opacity:1}75%,100%{transform:translateX(650%) rotate(25deg);opacity:0}}
       @keyframes boot-orbit{to{transform:rotate(360deg)}}
       @keyframes boot-copy-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
       @keyframes boot-progress{0%{transform:translateX(-120%)}50%,100%{transform:translateX(270%)}}
-      @media(prefers-reduced-motion:reduce){.boot-mark,.boot-orbit,.boot-line span{animation:none}.boot-mark{opacity:1}.boot-wordmark,.boot-line{opacity:1}}
+      @media(prefers-reduced-motion:reduce){.boot-mark,.boot-mark:after,.boot-orbit,.boot-line span{animation:none}.boot-mark{opacity:1}.boot-wordmark,.boot-line{opacity:1}}
     </style>
   </head>
   <body>
