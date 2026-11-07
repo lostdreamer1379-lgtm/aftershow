@@ -18,8 +18,8 @@ export default {
         'border': 'var(--color-border)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Playfair Display', 'Georgia', 'serif'],
+        sans: ['Nunito Sans', 'system-ui', 'sans-serif'],
+        display: ['DM Serif Display', 'Georgia', 'serif'],
       },
       aspectRatio: {
         'poster': '2 / 3',

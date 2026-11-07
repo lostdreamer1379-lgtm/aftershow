@@ -14,7 +14,7 @@
     <title>AFTERSHOW</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <script>
       // Prevent flash of wrong theme
       (function() {
@@ -33,7 +33,7 @@
       .boot-orbit{position:absolute;border:1px solid rgba(94,168,255,.18);border-radius:999px;animation:boot-orbit 4s linear infinite}
       .boot-orbit-one{width:190px;height:190px}
       .boot-orbit-two{width:270px;height:270px;border-color:rgba(66,232,135,.1);animation-direction:reverse;animation-duration:6s}
-      .boot-wordmark{font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.34em;padding-left:.34em;color:#dce8fa;animation:boot-copy-in .8s ease .25s both}
+      .boot-wordmark{font:700 13px/1 "Nunito Sans",system-ui,sans-serif;letter-spacing:.3em;padding-left:.3em;color:#dce8fa;animation:boot-copy-in .8s ease .25s both}
       .boot-line{width:72px;height:2px;overflow:hidden;border-radius:99px;background:#14233b;animation:boot-copy-in .8s ease .4s both}
       .boot-line span{display:block;width:42%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#5ea8ff,#42e887);animation:boot-progress 1.8s ease-in-out infinite}
       @keyframes boot-mark-in{from{opacity:0;transform:scale(.72) rotate(-8deg)}to{opacity:1;transform:scale(1) rotate(0)}}
@@ -51,9 +51,8 @@
       <div class="boot-orbit boot-orbit-two"></div>
       <div class="boot-mark">
         <svg viewBox="0 0 32 32" aria-hidden="true">
-          <rect x="6" y="12" width="20" height="13" rx="2" fill="#101D31" stroke="url(#boot-gradient)" stroke-width="1.5"/>
-          <path d="M6 12 9 6h17l-3 6H6Zm4-6 3 6m2-6 3 6m2-6 3 6" fill="none" stroke="url(#boot-gradient)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="m13 15 7 3.5-7 3.5v-7Z" fill="#fff"/>
+          <rect x="6" y="7" width="20" height="18" rx="4" fill="#101D31" stroke="url(#boot-gradient)" stroke-width="1.6"/>
+          <path d="m13 12 6 4-6 4v-8Z" fill="#fff"/>
           <defs><linearGradient id="boot-gradient" x1="4" y1="4" x2="28" y2="28"><stop stop-color="#5EA8FF"/><stop offset="1" stop-color="#42E887"/></linearGradient></defs>
         </svg>
       </div>
