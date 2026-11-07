@@ -56,11 +56,11 @@ export default function HomePage() {
 
   const featured = useMemo(() => heroShows[heroIndex], [heroShows, heroIndex])
 
-  const runManualSpin = (direction: 1 | -1, velocity: number) => {
+  const runManualSpin = (direction: 1 | -1, velocity: number, requestedSteps?: number) => {
     if (heroShows.length < 2 || isManualSpinning) return
     setIsManualSpinning(true)
 
-    let remaining = Math.min(14, Math.max(6, Math.round(velocity * 9)))
+    let remaining = requestedSteps ?? Math.min(14, Math.max(6, Math.round(velocity * 9)))
     let delay = 65
 
     const advance = () => {
@@ -77,6 +77,15 @@ export default function HomePage() {
     }
 
     advance()
+  }
+
+  const navigateToHero = (targetIndex: number) => {
+    if (heroShows.length < 2 || isManualSpinning || targetIndex === heroIndex) return
+
+    const forwardSteps = (targetIndex - heroIndex + heroShows.length) % heroShows.length
+    const backwardSteps = (heroIndex - targetIndex + heroShows.length) % heroShows.length
+    const direction: 1 | -1 = forwardSteps <= backwardSteps ? 1 : -1
+    runManualSpin(direction, 0.55, Math.min(forwardSteps, backwardSteps))
   }
 
   const handleHeroPointerDown = (event: React.PointerEvent<HTMLElement>) => {
@@ -197,6 +206,29 @@ export default function HomePage() {
           )}
           </>}
         </div>
+
+        {heroShows.length > 1 && (
+          <nav
+            aria-label="Featured series"
+            className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3 py-2 backdrop-blur-md"
+          >
+            {heroShows.map((show, index) => (
+              <button
+                key={show.id}
+                type="button"
+                aria-label={`Show ${index + 1}: ${show.name}`}
+                aria-current={index === heroIndex ? 'true' : undefined}
+                disabled={isManualSpinning}
+                onPointerDown={event => event.stopPropagation()}
+                onClick={() => navigateToHero(index)}
+                className={`h-1.5 rounded-full transition-all duration-500 ease-out disabled:cursor-wait ${
+                  index === heroIndex
+                    ? 'w-8 bg-[var(--color-accent)] shadow-[0_0_12px_var(--color-accent)]'
+                    : 'w-1.5 bg-white/45 hover:bg-white/80'
+                }`}
+              />
+            ))}
+          </nav>
       </section>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
