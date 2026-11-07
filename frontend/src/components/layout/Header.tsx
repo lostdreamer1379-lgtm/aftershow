@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { Search, User, Menu, X } from 'lucide-react'
+import { Search, User, Menu, X, Clock3 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { IconButton } from '@/components/ui/Button'
@@ -16,6 +16,21 @@ const NAV = [
   { label: 'History', to: '/history' },
 ]
 
+const RECENT_SEARCHES_KEY = 'aftershow:recent-searches'
+const MAX_RECENT_SEARCHES = 5
+
+function readRecentSearches(): string[] {
+  try {
+    const stored = window.localStorage.getItem(RECENT_SEARCHES_KEY)
+    const parsed: unknown = stored ? JSON.parse(stored) : []
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).slice(0, MAX_RECENT_SEARCHES)
+      : []
+  } catch {
+    return []
+  }
+}
+
 export default function Header() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -23,6 +38,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [recentSearches, setRecentSearches] = useState<string[]>([])
   const [scrolled, setScrolled] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const debouncedSearchQuery = useDebounce(searchQuery, 250)
@@ -45,7 +61,10 @@ export default function Header() {
   }, [])
 
   useEffect(() => {
-    if (searchOpen) setTimeout(() => searchRef.current?.focus(), 50)
+    if (searchOpen) {
+      setRecentSearches(readRecentSearches())
+      setTimeout(() => searchRef.current?.focus(), 50)
+    }
   }, [searchOpen])
 
   useEffect(() => {
@@ -61,9 +80,37 @@ export default function Header() {
     e.preventDefault()
     if (searchQuery.trim()) {
       const query = searchQuery.trim()
+      saveRecentSearch(query)
       closeSearch()
       navigate(`/explore?q=${encodeURIComponent(query)}`)
     }
+  }
+
+  const saveRecentSearch = (query: string) => {
+    const next = [query, ...recentSearches.filter(item => item.toLowerCase() !== query.toLowerCase())]
+      .slice(0, MAX_RECENT_SEARCHES)
+    setRecentSearches(next)
+    try {
+      window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next))
+    } catch {
+      // Search history still works for this session when storage is unavailable.
+    }
+  }
+
+  const removeRecentSearch = (query: string) => {
+    const next = recentSearches.filter(item => item !== query)
+    setRecentSearches(next)
+    try {
+      window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next))
+    } catch {
+      // Keep the in-memory list updated even when storage is unavailable.
+    }
+  }
+
+  const openRecentSearch = (query: string) => {
+    saveRecentSearch(query)
+    closeSearch()
+    navigate(`/explore?q=${encodeURIComponent(query)}`)
   }
 
   const closeSearch = () => {
@@ -72,6 +119,7 @@ export default function Header() {
   }
 
   const openSuggestion = (id: number) => {
+    if (searchQuery.trim()) saveRecentSearch(searchQuery.trim())
     closeSearch()
     navigate(`/tv/${id}`)
   }
@@ -208,7 +256,36 @@ export default function Header() {
                 </kbd>
               </form>
 
-              {(liveSearchQuery.length >= 2 || searchResults.isLoading) && (
+              {searchQuery.trim().length === 0 && recentSearches.length > 0 ? (
+                <div className="mt-2 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-2xl">
+                  <div className="flex items-center gap-2 border-b border-[var(--color-border-subtle)] px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
+                    <Clock3 size={13} />
+                    Recent searches
+                  </div>
+                  <div className="p-1.5">
+                    {recentSearches.map(query => (
+                      <div key={query} className="group flex items-center rounded-lg transition-colors hover:bg-[var(--color-bg-card-hover)]">
+                        <button
+                          type="button"
+                          onClick={() => openRecentSearch(query)}
+                          className="flex min-w-0 flex-1 items-center gap-3 px-2.5 py-2.5 text-left"
+                        >
+                          <Search size={16} className="flex-shrink-0 text-[var(--color-text-muted)]" />
+                          <span className="truncate text-sm text-[var(--color-text-primary)]">{query}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeRecentSearch(query)}
+                          aria-label={`Remove ${query} from recent searches`}
+                          className="mr-1.5 rounded-md p-1.5 text-[var(--color-text-muted)] opacity-70 transition-colors hover:bg-[var(--color-bg-card)] hover:text-[var(--color-text-primary)] group-hover:opacity-100"
+                        >
+                          <X size={15} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (liveSearchQuery.length >= 2 || searchResults.isLoading) && (
                 <div className="mt-2 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-2xl">
                   {searchResults.isLoading ? (
                     <p className="px-4 py-4 text-sm text-[var(--color-text-muted)]">Searching series…</p>
