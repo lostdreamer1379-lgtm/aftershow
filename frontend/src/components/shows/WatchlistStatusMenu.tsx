@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Bookmark, Check, Trash2 } from 'lucide-react'
 import { WatchStatus, WATCH_STATUS_LABELS } from '@/types'
 import Button from '@/components/ui/Button'
@@ -17,7 +18,10 @@ export default function WatchlistStatusMenu({ tmdbTvId, size = 'md' }: Watchlist
   const { user } = useAuth()
   const toast = useToast()
   const [open, setOpen] = useState(false)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
   const ref = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const entry = useWatchlistEntryFor(tmdbTvId)
   const addMutation = useAddToWatchlist()
@@ -26,11 +30,46 @@ export default function WatchlistStatusMenu({ tmdbTvId, size = 'md' }: Watchlist
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (
+        ref.current &&
+        !ref.current.contains(e.target as Node) &&
+        !menuRef.current?.contains(e.target as Node)
+      ) setOpen(false)
     }
     if (open) document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
+
+  useEffect(() => {
+    if (!open) return
+
+    const updateMenuPosition = () => {
+      const button = buttonRef.current
+      if (!button) return
+
+      const rect = button.getBoundingClientRect()
+      const menuWidth = 192
+      const menuHeight = entry ? 248 : 208
+      const gap = 4
+      const horizontalPadding = 8
+      const canOpenBelow = window.innerHeight - rect.bottom >= menuHeight + gap
+      const top = canOpenBelow ? rect.bottom + gap : Math.max(horizontalPadding, rect.top - menuHeight - gap)
+      const left = Math.min(
+        Math.max(horizontalPadding, rect.left),
+        window.innerWidth - menuWidth - horizontalPadding,
+      )
+
+      setMenuPosition({ top, left })
+    }
+
+    updateMenuPosition()
+    window.addEventListener('resize', updateMenuPosition)
+    window.addEventListener('scroll', updateMenuPosition, true)
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition)
+      window.removeEventListener('scroll', updateMenuPosition, true)
+    }
+  }, [entry, open])
 
   if (!user) {
     return (
@@ -68,6 +107,7 @@ export default function WatchlistStatusMenu({ tmdbTvId, size = 'md' }: Watchlist
   return (
     <div className="relative" ref={ref}>
       <Button
+        ref={buttonRef}
         variant={entry ? 'secondary' : 'ghost'}
         size={size}
         icon={<Bookmark size={16} fill={entry ? 'currentColor' : 'none'} />}
@@ -76,8 +116,12 @@ export default function WatchlistStatusMenu({ tmdbTvId, size = 'md' }: Watchlist
         {entry ? WATCH_STATUS_LABELS[entry.status] : 'Watchlist'}
       </Button>
 
-      {open && (
-        <div className="absolute z-20 mt-1 w-48 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-xl overflow-hidden">
+      {open && createPortal(
+        <div
+          ref={menuRef}
+          className="fixed z-[100] w-48 overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-xl"
+          style={{ top: menuPosition.top, left: menuPosition.left }}
+        >
           {STATUSES.map(status => (
             <button
               key={status}
@@ -96,7 +140,8 @@ export default function WatchlistStatusMenu({ tmdbTvId, size = 'md' }: Watchlist
               <Trash2 size={14} /> Remove from watchlist
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
