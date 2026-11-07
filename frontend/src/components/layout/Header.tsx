@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { Search, User, Menu, X, Tv } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
@@ -18,6 +18,7 @@ const NAV = [
 export default function Header() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -27,6 +28,14 @@ export default function Header() {
   const liveSearchQuery = searchOpen && debouncedSearchQuery.trim().length >= 2 ? debouncedSearchQuery : ''
   const searchResults = useSearchShows(liveSearchQuery)
   const suggestions = searchResults.data?.results?.slice(0, 5) ?? []
+
+  // The header stays mounted while route content changes. Always dismiss
+  // transient menus when navigation completes, including mobile deep links.
+  useEffect(() => {
+    setSearchOpen(false)
+    setSearchQuery('')
+    setMenuOpen(false)
+  }, [location.pathname, location.search])
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
