@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { Search, User, Menu, X, Tv } from 'lucide-react'
+import { Search, User, Menu, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { IconButton } from '@/components/ui/Button'
 import { useSearchShows } from '@/hooks/useTV'
 import { useDebounce } from '@/hooks/useDebounce'
 import { getPosterUrl } from '@/lib/tmdb-image'
+import BrandMark from '@/components/ui/BrandMark'
 
 const NAV = [
   { label: 'Explore', to: '/explore' },
@@ -89,7 +90,7 @@ export default function Header() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <div className="w-7 h-7 rounded bg-[var(--color-accent)] flex items-center justify-center">
-              <Tv size={14} className="text-[var(--color-bg-primary)]" />
+              <BrandMark size={19} className="text-[var(--color-bg-primary)]" />
             </div>
             <span className="font-semibold tracking-tight text-[var(--color-text-primary)] text-base">
               AFTERSHOW
@@ -177,24 +178,22 @@ export default function Header() {
         )}
       </AnimatePresence>
 
-      {/* Search overlay */}
-      <AnimatePresence>
-        {searchOpen && (
-          <>
-            <motion.div
-              className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeSearch}
-            />
-            <motion.div
-              className="fixed top-20 left-3 right-3 z-50 w-auto sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-full sm:max-w-xl sm:px-4"
-              initial={{ opacity: 0, y: -16, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -16, scale: 0.97 }}
-              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            >
+      {/* Search overlay. It is intentionally unmounted immediately on close
+          so it cannot remain above a newly navigated detail page. */}
+      {searchOpen && (
+        <>
+          <motion.div
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={closeSearch}
+          />
+          <motion.div
+            className="fixed top-20 left-3 right-3 z-50 w-auto sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-full sm:max-w-xl sm:px-4"
+            initial={{ opacity: 0, y: -16, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          >
               <form onSubmit={handleSearch} className="relative">
                 <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] pointer-events-none" />
                 <input
@@ -240,10 +239,9 @@ export default function Header() {
                   )}
                 </div>
               )}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          </motion.div>
+        </>
+      )}
     </>
   )
 }

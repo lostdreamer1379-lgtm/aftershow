@@ -3,7 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#05070D" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="description" content="AFTERSHOW — Discover, explore and watch television series." />
     <title>AFTERSHOW</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -18,8 +24,40 @@
         } catch(e) {}
       })();
     </script>
+    <style>
+      #boot-splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;align-content:center;gap:18px;overflow:hidden;background:#05070d;color:#f5f7ff;transition:opacity .45s ease,visibility .45s ease}
+      #boot-splash.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
+      .boot-mark{position:relative;width:88px;height:88px;display:grid;place-items:center;border:1px solid rgba(94,168,255,.45);border-radius:25px;background:linear-gradient(145deg,#12233b,#07101f);box-shadow:0 0 0 8px rgba(94,168,255,.06),0 0 45px rgba(66,232,135,.2);animation:boot-mark-in .9s cubic-bezier(.2,.8,.2,1) both,boot-mark-float 2.8s ease-in-out .9s infinite}
+      .boot-mark svg{width:58px;height:58px}
+      .boot-orbit{position:absolute;border:1px solid rgba(94,168,255,.18);border-radius:999px;animation:boot-orbit 4s linear infinite}
+      .boot-orbit-one{width:190px;height:190px}
+      .boot-orbit-two{width:270px;height:270px;border-color:rgba(66,232,135,.1);animation-direction:reverse;animation-duration:6s}
+      .boot-wordmark{font:600 13px/1 Inter,system-ui,sans-serif;letter-spacing:.34em;padding-left:.34em;color:#dce8fa;animation:boot-copy-in .8s ease .25s both}
+      .boot-line{width:72px;height:2px;overflow:hidden;border-radius:99px;background:#14233b;animation:boot-copy-in .8s ease .4s both}
+      .boot-line span{display:block;width:42%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#5ea8ff,#42e887);animation:boot-progress 1.3s ease-in-out infinite}
+      @keyframes boot-mark-in{from{opacity:0;transform:scale(.72) rotate(-8deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+      @keyframes boot-mark-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+      @keyframes boot-orbit{to{transform:rotate(360deg)}}
+      @keyframes boot-copy-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes boot-progress{0%{transform:translateX(-120%)}50%,100%{transform:translateX(270%)}}
+      @media(prefers-reduced-motion:reduce){.boot-mark,.boot-orbit,.boot-line span{animation:none}.boot-mark{opacity:1}.boot-wordmark,.boot-line{opacity:1}}
+    </style>
   </head>
   <body>
+    <div id="boot-splash" aria-label="Opening AFTERSHOW" role="status">
+      <div class="boot-orbit boot-orbit-one"></div>
+      <div class="boot-orbit boot-orbit-two"></div>
+      <div class="boot-mark">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="6" y="12" width="20" height="13" rx="2" fill="#101D31" stroke="url(#boot-gradient)" stroke-width="1.5"/>
+          <path d="M6 12 9 6h17l-3 6H6Zm4-6 3 6m2-6 3 6m2-6 3 6" fill="none" stroke="url(#boot-gradient)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="m13 15 7 3.5-7 3.5v-7Z" fill="#fff"/>
+          <defs><linearGradient id="boot-gradient" x1="4" y1="4" x2="28" y2="28"><stop stop-color="#5EA8FF"/><stop offset="1" stop-color="#42E887"/></linearGradient></defs>
+        </svg>
+      </div>
+      <div class="boot-wordmark">AFTERSHOW</div>
+      <div class="boot-line"><span></span></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

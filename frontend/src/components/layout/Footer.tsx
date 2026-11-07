@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Tv } from 'lucide-react'
+import BrandMark from '@/components/ui/BrandMark'
 
 export default function Footer() {
   return (
@@ -8,7 +8,7 @@ export default function Footer() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-[var(--color-accent)] flex items-center justify-center">
-              <Tv size={12} className="text-[var(--color-bg-primary)]" />
+              <BrandMark size={16} className="text-[var(--color-bg-primary)]" />
             </div>
             <span className="font-semibold text-sm text-[var(--color-text-primary)]">AFTERSHOW</span>
           </div>

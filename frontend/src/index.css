@@ -33,142 +33,146 @@ html {
 
 :root,
 [data-theme="midnight-blue"] {
-  --color-bg-primary: #0D111B;
-  --color-bg-secondary: #151C2B;
-  --color-bg-card: #1C2638;
-  --color-bg-card-hover: #223044;
-  --color-bg-elevated: #202D40;
-  --color-text-primary: #F1F3F7;
-  --color-text-secondary: #A8B2C2;
-  --color-text-muted: #6B7A92;
-  --color-accent: #8199C7;
-  --color-accent-hover: #94ABDA;
-  --color-accent-subtle: rgba(129,153,199,0.12);
-  --color-border: #2B3548;
-  --color-border-subtle: #1E293B;
-  --color-skeleton: #1C2638;
-  --color-skeleton-shine: #223044;
-  --color-overlay: rgba(13,17,27,0.85);
+  --color-bg-primary: #05070D;
+  --color-bg-secondary: #0B1220;
+  --color-bg-card: #111C2E;
+  --color-bg-card-hover: #172846;
+  --color-bg-elevated: #14243B;
+  --color-text-primary: #F5F7FF;
+  --color-text-secondary: #B7C5DA;
+  --color-text-muted: #7890B2;
+  --color-accent: #5EA8FF;
+  --color-accent-hover: #85BCFF;
+  --color-accent-subtle: rgba(94,168,255,0.16);
+  --color-border: #263E62;
+  --color-border-subtle: #14233B;
+  --color-skeleton: #111C2E;
+  --color-skeleton-shine: #172846;
+  --color-overlay: rgba(5,7,13,0.90);
   --color-success: #4CAF7D;
   --color-warning: #E8A044;
   --color-error: #E05C5C;
-  --color-nav-bg: rgba(13,17,27,0.92);
+  --color-nav-bg: rgba(5,7,13,0.94);
 }
 
 [data-theme="cinema-night"] {
-  --color-bg-primary: #1A1612;
-  --color-bg-secondary: #221E18;
-  --color-bg-card: #2C261E;
-  --color-bg-card-hover: #342E24;
-  --color-bg-elevated: #302A20;
-  --color-text-primary: #F5EDD8;
-  --color-text-secondary: #C4B89A;
-  --color-text-muted: #8A7D65;
-  --color-accent: #C9A84C;
-  --color-accent-hover: #DDB95A;
-  --color-accent-subtle: rgba(201,168,76,0.12);
-  --color-border: #3D3528;
-  --color-border-subtle: #2A2318;
-  --color-skeleton: #2C261E;
-  --color-skeleton-shine: #342E24;
-  --color-overlay: rgba(26,22,18,0.88);
+  --color-bg-primary: #090705;
+  --color-bg-secondary: #17100A;
+  --color-bg-card: #24170B;
+  --color-bg-card-hover: #38220C;
+  --color-bg-elevated: #301D0B;
+  --color-text-primary: #FFF4D6;
+  --color-text-secondary: #D9BD87;
+  --color-text-muted: #A58A5C;
+  --color-accent: #FFB52E;
+  --color-accent-hover: #FFC95A;
+  --color-accent-subtle: rgba(255,181,46,0.16);
+  --color-border: #5B3B15;
+  --color-border-subtle: #2C1C0B;
+  --color-skeleton: #24170B;
+  --color-skeleton-shine: #38220C;
+  --color-overlay: rgba(9,7,5,0.92);
   --color-success: #4CAF7D;
   --color-warning: #E8A044;
   --color-error: #E05C5C;
-  --color-nav-bg: rgba(26,22,18,0.92);
+  --color-nav-bg: rgba(9,7,5,0.94);
 }
 
 [data-theme="noir"] {
-  --color-bg-primary: #111111;
-  --color-bg-secondary: #191919;
-  --color-bg-card: #222222;
-  --color-bg-card-hover: #2A2A2A;
-  --color-bg-elevated: #252525;
-  --color-text-primary: #EEEEEE;
-  --color-text-secondary: #AAAAAA;
-  --color-text-muted: #666666;
-  --color-accent: #CCCCCC;
-  --color-accent-hover: #EEEEEE;
-  --color-accent-subtle: rgba(200,200,200,0.10);
-  --color-border: #333333;
-  --color-border-subtle: #1F1F1F;
-  --color-skeleton: #222222;
-  --color-skeleton-shine: #2A2A2A;
-  --color-overlay: rgba(10,10,10,0.90);
+  --color-bg-primary: #000000;
+  --color-bg-secondary: #0A0A0A;
+  --color-bg-card: #171717;
+  --color-bg-card-hover: #242424;
+  --color-bg-elevated: #202020;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #D0D0D0;
+  --color-text-muted: #8E8E8E;
+  --color-accent: #F5F5F5;
+  --color-accent-hover: #FFFFFF;
+  --color-accent-subtle: rgba(245,245,245,0.14);
+  --color-border: #3D3D3D;
+  --color-border-subtle: #1A1A1A;
+  --color-skeleton: #171717;
+  --color-skeleton-shine: #242424;
+  --color-overlay: rgba(0,0,0,0.94);
   --color-success: #5CB87A;
   --color-warning: #D4904A;
   --color-error: #CC5555;
-  --color-nav-bg: rgba(11,11,11,0.94);
+  --color-nav-bg: rgba(0,0,0,0.96);
 }
 
 [data-theme="burgundy-premiere"] {
-  --color-bg-primary: #120A0D;
-  --color-bg-secondary: #1C1013;
-  --color-bg-card: #261518;
-  --color-bg-card-hover: #2E1B1E;
-  --color-bg-elevated: #2A181C;
-  --color-text-primary: #F5E8EC;
-  --color-text-secondary: #C4A8B2;
-  --color-text-muted: #8A6872;
-  --color-accent: #C47A8A;
-  --color-accent-hover: #D4899A;
-  --color-accent-subtle: rgba(196,122,138,0.12);
-  --color-border: #3D2028;
-  --color-border-subtle: #281318;
-  --color-skeleton: #261518;
-  --color-skeleton-shine: #2E1B1E;
-  --color-overlay: rgba(18,10,13,0.88);
+  --color-bg-primary: #080204;
+  --color-bg-secondary: #17070D;
+  --color-bg-card: #260D16;
+  --color-bg-card-hover: #3A101D;
+  --color-bg-elevated: #32101B;
+  --color-text-primary: #FFF1F5;
+  --color-text-secondary: #E3B7C5;
+  --color-text-muted: #B9788B;
+  --color-accent: #FF4F82;
+  --color-accent-hover: #FF79A0;
+  --color-accent-subtle: rgba(255,79,130,0.16);
+  --color-border: #5A1C31;
+  --color-border-subtle: #2B0C17;
+  --color-skeleton: #260D16;
+  --color-skeleton-shine: #3A101D;
+  --color-overlay: rgba(8,2,4,0.92);
   --color-success: #4CAF7D;
   --color-warning: #E8A044;
   --color-error: #E05C5C;
-  --color-nav-bg: rgba(18,10,13,0.92);
+  --color-nav-bg: rgba(8,2,4,0.94);
 }
 
 [data-theme="forest-cinema"] {
-  --color-bg-primary: #0A1210;
-  --color-bg-secondary: #101A16;
-  --color-bg-card: #172320;
-  --color-bg-card-hover: #1D2D28;
-  --color-bg-elevated: #1A2822;
-  --color-text-primary: #E8F0EC;
-  --color-text-secondary: #A0B8A8;
-  --color-text-muted: #607868;
-  --color-accent: #74A882;
-  --color-accent-hover: #86BB94;
-  --color-accent-subtle: rgba(116,168,130,0.12);
-  --color-border: #263830;
-  --color-border-subtle: #182820;
-  --color-skeleton: #172320;
-  --color-skeleton-shine: #1D2D28;
-  --color-overlay: rgba(10,18,16,0.88);
+  --color-bg-primary: #020805;
+  --color-bg-secondary: #07140D;
+  --color-bg-card: #0E2619;
+  --color-bg-card-hover: #123B25;
+  --color-bg-elevated: #10311F;
+  --color-text-primary: #EDFFF4;
+  --color-text-secondary: #A9D8B8;
+  --color-text-muted: #6FAF88;
+  --color-accent: #42E887;
+  --color-accent-hover: #72F2A8;
+  --color-accent-subtle: rgba(66,232,135,0.16);
+  --color-border: #1B5A38;
+  --color-border-subtle: #0D2B1A;
+  --color-skeleton: #0E2619;
+  --color-skeleton-shine: #123B25;
+  --color-overlay: rgba(2,8,5,0.92);
   --color-success: #4CAF7D;
   --color-warning: #E8A044;
   --color-error: #E05C5C;
-  --color-nav-bg: rgba(10,18,16,0.92);
+  --color-nav-bg: rgba(2,8,5,0.94);
 }
 
 [data-theme="ivory-matinee"] {
-  --color-bg-primary: #F7F4EE;
-  --color-bg-secondary: #EDE9E0;
-  --color-bg-card: #E4DFD4;
-  --color-bg-card-hover: #DAD4C8;
-  --color-bg-elevated: #E8E3D8;
-  --color-text-primary: #1A1612;
-  --color-text-secondary: #4A4238;
-  --color-text-muted: #7A7268;
-  --color-accent: #8C6A3A;
-  --color-accent-hover: #A07840;
-  --color-accent-subtle: rgba(140,106,58,0.10);
-  --color-border: #CCC6B8;
-  --color-border-subtle: #D8D2C4;
-  --color-skeleton: #E4DFD4;
-  --color-skeleton-shine: #DAD4C8;
-  --color-overlay: rgba(247,244,238,0.90);
+  --color-bg-primary: #FFFDF8;
+  --color-bg-secondary: #F5EFE5;
+  --color-bg-card: #EEE5D5;
+  --color-bg-card-hover: #E5D6C0;
+  --color-bg-elevated: #F9F0E2;
+  --color-text-primary: #17120D;
+  --color-text-secondary: #534337;
+  --color-text-muted: #7C6B59;
+  --color-accent: #C86B1F;
+  --color-accent-hover: #E77B2D;
+  --color-accent-subtle: rgba(200,107,31,0.14);
+  --color-border: #CDBB9F;
+  --color-border-subtle: #E1D5C2;
+  --color-skeleton: #EEE5D5;
+  --color-skeleton-shine: #E5D6C0;
+  --color-overlay: rgba(255,253,248,0.92);
   --color-success: #3A8A5C;
   --color-warning: #B87A28;
   --color-error: #B84040;
-  --color-nav-bg: rgba(247,244,238,0.94);
+  --color-nav-bg: rgba(255,253,248,0.96);
 }
+
+/* Keep native controls aligned with the OLED dark palettes. */
+html:not([data-theme="ivory-matinee"]) { color-scheme: dark; }
+html[data-theme="ivory-matinee"] { color-scheme: light; }
 
 /* ═══════════════════════════════════════════════
    Base
@@ -239,7 +243,7 @@ body {
   background: linear-gradient(to right, var(--color-bg-primary) 30%, transparent 70%);
 }
 .backdrop-gradient-bottom {
-  background: linear-gradient(to top, var(--color-bg-primary) 0%, rgba(13,17,27,0.6) 50%, transparent 100%);
+  background: linear-gradient(to top, var(--color-bg-primary) 0%, color-mix(in srgb, var(--color-bg-primary) 60%, transparent) 50%, transparent 100%);
 }
 
 /* Horizontal scroll */

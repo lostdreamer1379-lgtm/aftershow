@@ -8,3 +8,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>,
 )
+
+// Let the branded launch cue finish its handoff without delaying the app shell.
+const bootSplash = document.getElementById('boot-splash')
+if (bootSplash) {
+  window.setTimeout(() => {
+    bootSplash.classList.add('is-hidden')
+    window.setTimeout(() => bootSplash.remove(), 500)
+  }, 220)
+}

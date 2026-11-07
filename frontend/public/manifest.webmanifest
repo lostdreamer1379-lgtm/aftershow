@@ -1,0 +1,18 @@
+{
+  "name": "AFTERSHOW",
+  "short_name": "AFTERSHOW",
+  "description": "Discover, explore and watch television series.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#05070D",
+  "theme_color": "#05070D",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

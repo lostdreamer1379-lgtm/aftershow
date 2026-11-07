@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Mail, Lock, Tv, MailCheck } from 'lucide-react'
+import { Mail, Lock, MailCheck } from 'lucide-react'
+import BrandMark from '@/components/ui/BrandMark'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { useAuth } from '@/contexts/AuthContext'
@@ -59,7 +60,7 @@ export default function SignupPage() {
     <div className="mx-auto max-w-sm px-4 py-16">
       <div className="flex flex-col items-center mb-8">
         <div className="w-10 h-10 rounded-lg bg-[var(--color-accent)] flex items-center justify-center mb-4">
-          <Tv size={20} className="text-[var(--color-bg-primary)]" />
+          <BrandMark size={25} className="text-[var(--color-bg-primary)]" />
         </div>
         <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">Create your account</h1>
         <p className="text-sm text-[var(--color-text-muted)] mt-1">Start tracking the shows you love</p>
