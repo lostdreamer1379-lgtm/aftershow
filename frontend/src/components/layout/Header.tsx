@@ -68,6 +68,17 @@ export default function Header() {
     }
   }, [searchOpen])
 
+  // Mobile browsers can restore this page from the back-forward cache after
+  // returning from Worlds. Clear the one-shot handoff so the home page is
+  // immediately usable instead of replaying the entry screen.
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setWorldsTransitioning(false)
+    }
+    window.addEventListener('pageshow', handlePageShow)
+    return () => window.removeEventListener('pageshow', handlePageShow)
+  }, [])
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { setSearchOpen(false); setMenuOpen(false) }
@@ -253,15 +264,6 @@ export default function Header() {
                   {label}
                 </NavLink>
               ))}
-              <a
-                href="https://frontend-worlds.vercel.app/"
-                onClick={enterWorlds}
-                className="worlds-portal mt-2 w-full justify-center py-3 sm:hidden"
-              >
-                <Globe2 size={16} />
-                <span>Enter Worlds</span>
-                <ArrowUpRight size={14} className="opacity-60" />
-              </a>
             </motion.nav>
           </>
         )}
