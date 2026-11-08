@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { Search, User, Menu, X, Clock3 } from 'lucide-react'
+import { Search, User, Menu, X, Clock3, Globe2, Sparkles, ArrowUpRight } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { IconButton } from '@/components/ui/Button'
@@ -40,6 +40,7 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('')
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   const [scrolled, setScrolled] = useState(false)
+  const [worldsTransitioning, setWorldsTransitioning] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const debouncedSearchQuery = useDebounce(searchQuery, 250)
   const liveSearchQuery = searchOpen && debouncedSearchQuery.trim().length >= 2 ? debouncedSearchQuery : ''
@@ -124,6 +125,16 @@ export default function Header() {
     navigate(`/tv/${id}`)
   }
 
+  const enterWorlds = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault()
+    if (worldsTransitioning) return
+    setMenuOpen(false)
+    setWorldsTransitioning(true)
+    window.setTimeout(() => {
+      window.location.assign('https://frontend-worlds.vercel.app/')
+    }, 720)
+  }
+
   return (
     <>
       <header
@@ -164,6 +175,19 @@ export default function Header() {
             ))}
           </nav>
 
+          {/* Portal to Worlds */}
+          <a
+            href="https://frontend-worlds.vercel.app/"
+            onClick={enterWorlds}
+            className="worlds-portal group hidden sm:inline-flex"
+            aria-label="Enter Frontend Worlds"
+          >
+            <span className="worlds-portal__aura" aria-hidden="true" />
+            <Globe2 size={15} className="relative z-10 transition-transform duration-500 group-hover:rotate-180" />
+            <span className="relative z-10">Worlds</span>
+            <ArrowUpRight size={13} className="relative z-10 opacity-60 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          </a>
+
           {/* Actions */}
           <div className="flex items-center gap-1">
             <IconButton onClick={() => { setMenuOpen(false); setSearchOpen(true) }} aria-label="Search" size="sm">
@@ -176,6 +200,14 @@ export default function Header() {
             >
               <User size={18} />
             </Link>
+            <a
+              href="https://frontend-worlds.vercel.app/"
+              onClick={enterWorlds}
+              aria-label="Enter Frontend Worlds"
+              className="worlds-portal worlds-portal--mobile sm:hidden"
+            >
+              <Globe2 size={16} />
+            </a>
             <button
               className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-md text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-accent-subtle)] transition-colors"
               onClick={() => setMenuOpen(v => !v)}
@@ -221,8 +253,47 @@ export default function Header() {
                   {label}
                 </NavLink>
               ))}
+              <a
+                href="https://frontend-worlds.vercel.app/"
+                onClick={enterWorlds}
+                className="worlds-portal mt-2 w-full justify-center py-3 sm:hidden"
+              >
+                <Globe2 size={16} />
+                <span>Enter Worlds</span>
+                <ArrowUpRight size={14} className="opacity-60" />
+              </a>
             </motion.nav>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* A soft, spatial handoff makes the external jump feel intentional. */}
+      <AnimatePresence>
+        {worldsTransitioning && (
+          <motion.div
+            className="worlds-transition"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            aria-live="polite"
+            aria-label="Entering Frontend Worlds"
+          >
+            <div className="worlds-transition__field" aria-hidden="true">
+              <span className="worlds-transition__ring worlds-transition__ring--one" />
+              <span className="worlds-transition__ring worlds-transition__ring--two" />
+              <span className="worlds-transition__core" />
+            </div>
+            <motion.div
+              className="relative z-10 flex flex-col items-center gap-3 text-center"
+              initial={{ opacity: 0, y: 12, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0.12, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <Sparkles size={18} className="text-violet-200" />
+              <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-violet-200/70">Opening a new dimension</p>
+              <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Entering Worlds</h2>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
