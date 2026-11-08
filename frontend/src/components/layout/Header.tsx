@@ -68,15 +68,29 @@ export default function Header() {
     }
   }, [searchOpen])
 
-  // Mobile browsers can restore this page from the back-forward cache after
-  // returning from Worlds. Clear the one-shot handoff so the home page is
-  // immediately usable instead of replaying the entry screen.
+  // Mobile browsers can preserve this document in the back-forward cache.
+  // Reset on both sides of the external navigation so the cached Aftershow
+  // page can never reopen with the one-shot Worlds overlay still mounted.
   useEffect(() => {
-    const handlePageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) setWorldsTransitioning(false)
+    const resetWorldsTransition = () => {
+      setWorldsTransitioning(false)
+      document.documentElement.classList.remove('worlds-returning')
     }
+
+    const handlePageShow = () => resetWorldsTransition()
+    const handlePageHide = () => {
+      // Hide immediately as well as updating React state. This covers Safari
+      // and Chromium mobile snapshots that freeze the DOM before a rerender.
+      document.documentElement.classList.add('worlds-returning')
+      resetWorldsTransition()
+    }
+
     window.addEventListener('pageshow', handlePageShow)
-    return () => window.removeEventListener('pageshow', handlePageShow)
+    window.addEventListener('pagehide', handlePageHide)
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow)
+      window.removeEventListener('pagehide', handlePageHide)
+    }
   }, [])
 
   useEffect(() => {
