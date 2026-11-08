@@ -72,12 +72,12 @@ export default function Header() {
   // Reset on both sides of the external navigation so the cached Aftershow
   // page can never reopen with the one-shot Worlds overlay still mounted.
   useEffect(() => {
-    const resetWorldsTransition = () => {
-      setWorldsTransitioning(false)
-      document.documentElement.classList.remove('worlds-returning')
-    }
+    const resetWorldsTransition = () => setWorldsTransitioning(false)
 
-    const handlePageShow = () => resetWorldsTransition()
+    const handlePageShow = () => {
+      document.documentElement.classList.remove('worlds-returning')
+      resetWorldsTransition()
+    }
     const handlePageHide = () => {
       // Hide immediately as well as updating React state. This covers Safari
       // and Chromium mobile snapshots that freeze the DOM before a rerender.
@@ -204,7 +204,7 @@ export default function Header() {
           <a
             href="https://frontend-worlds.vercel.app/"
             onClick={enterWorlds}
-            className="worlds-portal group hidden sm:inline-flex"
+            className="worlds-portal group hidden md:inline-flex"
             aria-label="Enter Frontend Worlds"
           >
             <span className="worlds-portal__aura" aria-hidden="true" />
@@ -229,7 +229,7 @@ export default function Header() {
               href="https://frontend-worlds.vercel.app/"
               onClick={enterWorlds}
               aria-label="Enter Frontend Worlds"
-              className="worlds-portal worlds-portal--mobile sm:hidden"
+              className="worlds-portal worlds-portal--mobile inline-flex md:hidden"
             >
               <Globe2 size={16} />
             </a>
