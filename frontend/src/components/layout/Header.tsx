@@ -78,6 +78,7 @@ export default function Header() {
       document.documentElement.classList.remove('worlds-returning')
       resetWorldsTransition()
     }
+    const handlePopState = () => resetWorldsTransition()
     const handlePageHide = () => {
       // Hide immediately as well as updating React state. This covers Safari
       // and Chromium mobile snapshots that freeze the DOM before a rerender.
@@ -87,9 +88,11 @@ export default function Header() {
 
     window.addEventListener('pageshow', handlePageShow)
     window.addEventListener('pagehide', handlePageHide)
+    window.addEventListener('popstate', handlePopState)
     return () => {
       window.removeEventListener('pageshow', handlePageShow)
       window.removeEventListener('pagehide', handlePageHide)
+      window.removeEventListener('popstate', handlePopState)
     }
   }, [])
 
@@ -204,7 +207,7 @@ export default function Header() {
           <a
             href="https://frontend-worlds.vercel.app/"
             onClick={enterWorlds}
-            className="worlds-portal group hidden md:inline-flex"
+            className="worlds-portal worlds-portal--desktop group hidden md:inline-flex"
             aria-label="Enter Frontend Worlds"
           >
             <span className="worlds-portal__aura" aria-hidden="true" />
