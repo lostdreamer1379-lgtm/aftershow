@@ -57,6 +57,7 @@ export default function VidRiftPlayer({
 }: VidRiftPlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const hasReceivedMessage = useRef(false)
+  const hasReceivedState = useRef(false)
   const hasSentResume = useRef(false)
   const remoteCommandUntil = useRef(0)
   const latestCurrentTime = useRef(0)
@@ -72,11 +73,25 @@ export default function VidRiftPlayer({
   // mounted across episodes).
   useEffect(() => {
     hasReceivedMessage.current = false
+    hasReceivedState.current = false
     hasSentResume.current = false
     latestCurrentTime.current = 0
     pendingPartyCommand.current = null
     setSlowToLoad(false)
   }, [tmdbId, season, episode, retryKey])
+
+  // History is loaded independently of the iframe. If the iframe announces
+  // that it is ready first, the initial message handler may not have a resume
+  // position yet. Send it as soon as history arrives instead of losing the
+  // only ready event.
+  useEffect(() => {
+    const win = iframeRef.current?.contentWindow
+    if (!win || !hasReceivedState.current || hasSentResume.current) return
+    if (resumePosition === undefined || resumePosition <= 0) return
+
+    sendResume(win, resumePosition)
+    hasSentResume.current = true
+  }, [resumePosition])
 
   const applyPartyCommand = useCallback((command: PartyPlayerCommand) => {
     const win = iframeRef.current?.contentWindow
@@ -126,6 +141,7 @@ export default function VidRiftPlayer({
           // before the player has told us it's listening, and never twice.
           const win = iframeRef.current?.contentWindow
           if (!win) break
+          hasReceivedState.current = true
           sendNextUpInfo(win, nextEpisode)
           if (!hasSentResume.current && resumePosition && resumePosition > 0) {
             sendResume(win, resumePosition)
