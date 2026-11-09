@@ -99,6 +99,10 @@ export function sendResume(target: Window, currentTime: number) {
   target.postMessage({ type: 'vidrift:resume', currentTime }, VIDRIFT_ORIGIN)
 }
 
+export function sendGetState(target: Window) {
+  target.postMessage({ type: 'vidrift:get-state' }, VIDRIFT_ORIGIN)
+}
+
 export function sendPlaybackCommand(target: Window, command: { action: 'play' | 'pause' | 'seek'; currentTime?: number }) {
   if (command.action === 'seek' && command.currentTime !== undefined) {
     target.postMessage({ type: 'vidrift:resume', currentTime: command.currentTime }, VIDRIFT_ORIGIN)

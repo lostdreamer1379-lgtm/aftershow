@@ -8,6 +8,7 @@ import {
   parseEpisodePayload,
   sendNextUpInfo,
   sendResume,
+  sendGetState,
   sendPlaybackCommand,
 } from '@/lib/vidrift'
 import { NextEpisodeInfo } from '@/types'
@@ -57,7 +58,6 @@ export default function VidRiftPlayer({
 }: VidRiftPlayerProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const hasReceivedMessage = useRef(false)
-  const hasReceivedState = useRef(false)
   const hasSentResume = useRef(false)
   const remoteCommandUntil = useRef(0)
   const latestCurrentTime = useRef(0)
@@ -73,7 +73,6 @@ export default function VidRiftPlayer({
   // mounted across episodes).
   useEffect(() => {
     hasReceivedMessage.current = false
-    hasReceivedState.current = false
     hasSentResume.current = false
     latestCurrentTime.current = 0
     pendingPartyCommand.current = null
@@ -86,11 +85,27 @@ export default function VidRiftPlayer({
   // only ready event.
   useEffect(() => {
     const win = iframeRef.current?.contentWindow
-    if (!win || !hasReceivedState.current || hasSentResume.current) return
+    if (!win || hasSentResume.current) return
     if (resumePosition === undefined || resumePosition <= 0) return
 
     sendResume(win, resumePosition)
     hasSentResume.current = true
+  }, [resumePosition])
+
+  const handleIframeLoad = useCallback(() => {
+    const win = iframeRef.current?.contentWindow
+    if (!win) return
+
+    // VidRift only emits vidrift:state after this handshake. That state event
+    // is also where we provide the next-episode data and resume position.
+    sendGetState(win)
+
+    // The resume command is safe before the stream is ready, so this also
+    // covers iframe retries where resumePosition has not changed.
+    if (!hasSentResume.current && resumePosition !== undefined && resumePosition > 0) {
+      sendResume(win, resumePosition)
+      hasSentResume.current = true
+    }
   }, [resumePosition])
 
   const applyPartyCommand = useCallback((command: PartyPlayerCommand) => {
@@ -141,7 +156,6 @@ export default function VidRiftPlayer({
           // before the player has told us it's listening, and never twice.
           const win = iframeRef.current?.contentWindow
           if (!win) break
-          hasReceivedState.current = true
           sendNextUpInfo(win, nextEpisode)
           if (!hasSentResume.current && resumePosition && resumePosition > 0) {
             sendResume(win, resumePosition)
@@ -197,6 +211,7 @@ export default function VidRiftPlayer({
           key={retryKey}
           ref={iframeRef}
           src={embedUrl}
+          onLoad={handleIframeLoad}
           title={`AFTERSHOW player — S${season}E${episode}`}
           allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
           allowFullScreen
